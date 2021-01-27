@@ -1,0 +1,206 @@
+{
+    "kind": "template",
+    "type": "Microsoft.Blueprint/blueprints/artifacts",
+    "name": "anf",
+    "properties": {
+        "displayname": "Azure Netapp Files template",
+        "description":"",
+        "dependsOn":[
+            "addsDAUser",
+            "DNSsharedsvcs"
+        ],
+        "template":{
+            "$schema" : "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "resourcePrefix": {
+                    "type": "string",
+                    "metadata": {
+                      "displayName": "Resource Prefix"
+                    }
+                },
+                "location": {
+                    "type": "string",
+                    "defaultValue": "[resourceGroup().location]",
+                    "metadata": {
+                        "description": "Same location of resource group for all resources"
+                    }
+                },
+                "netappAccountName": {
+                    "defaultValue": "[concat(parameters('resourcePrefix'), 'anf')]",
+                    "type": "String",
+                    "metadata": {
+                        "description": "Name for the Account. The account name must be unique within the subscription"
+                    }
+                },
+                "adUsername": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "The value of Active Directory username"
+                    }
+                },
+                "adPassword":{
+                    "reference":{
+                        "keyvault":{
+                            "id": "[resourceId('Microsoft.KeyVault/vaults', variables('key-vault-name'))]"
+                        },
+                        "secretName": "[variables('existingDomainUsername')]"
+                    }
+                },
+                "smbServerName": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "SMB server name"
+                    }
+                },
+                "netAppPoolName": {
+                    "defaultValue": "[concat('pool', uniqueString(resourceGroup().id))]",
+                    "type": "String",
+                    "metadata": {
+                        "description": "Name for the capacity pool. The capacity pool name must be unique for each NetApp account."
+                    }
+                },
+                "poolSizeBytes": {
+                    "type": "int",
+                    "defaultValue": 4398046511104,
+                    "minValue": 4398046511104,
+                    "maxValue": 549755813888000,
+                    "metadata": {
+                        "description": "Size of the capacity pool. The minimum  size is 4 TiB."
+                    }
+                },
+                "netAppVolumeName": {
+                    "defaultValue": "Profiles",
+                    "type": "String",
+                    "metadata": {
+                        "description": "Name for the Volume. A volume name must be unique within each capacity pool. It must be at aleast three characters long and you can use any alphanumeric characters."
+                    }
+                },
+                "volSizeBytes": {
+                    "type": "int",
+                    "defaultValue": 107374182400,
+                    "minValue": 107374182400,
+                    "maxValue": 109951162777600,
+                    "metadata": {
+                        "description": "Amount of logical storage that is allocated to the volume."
+                    }
+                },
+                "anfSubnetName": {
+                    "type": "string",
+                    "defaultValue": "AzureNetappFilesSubnet",
+                    "metadata": {
+                        "description": "The name of the subnet where the ANF volume will be created. This subnet will be delegated to Microsoft.NetApp/volumes."
+                    }
+                },
+                "anfSubnetAddressPrefix": {
+                    "type": "String",
+                    "defaultValue":"10.0.7.0/24",
+                    "metadata": {
+                        "description": "Subnet address range."
+                    }
+                },
+                "serviceLevel": {
+                    "type": "string",
+                    "allowedValues": [
+                        "Premium",
+                        "Ultra",
+                        "Standard"
+                    ],
+                    "defaultValue": "Standard",
+                    "metadata": {
+                        "description": "Target performance for the capacity pool. Service level: Ultra, Premium, or Standard."
+                    }
+                },
+                "dnsIpAddress": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "IP Address of the existing AD DNS Controller"
+                    }
+                },
+                "domainName": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "Domain name for AD"
+                    }
+                },
+                "virtualNetworkSubscriptionId": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "SubscriptionId of the existing virtual network"
+                    }
+                },
+                "virtualNetworkResourceGroupName": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "ResourceGroup name of the existing virtual network"
+                    }
+                },
+                "virtualNetworkName": {
+                    "type": "string",
+                    "metadata": {
+                        "description": "Name of the existing virtual network"
+                    }
+                }
+            },
+            "variables":{
+                "deployment-prefix": "[concat(parameters('resourcePrefix'), '-sharedsvcs')]",
+                "key-vault-name": "[concat(variables('deployment-prefix'), '-kv')]",
+                "key-vault-resourceID": "[resourceId('Microsoft.KeyVault/vaults', variables('key-vault-name'))]",
+                "existingDomainUsername": "[first(split(parameters('DAUser_domainadmin'), '@'))]"
+            },
+            "resources":[
+                {
+                    "type": "Microsoft.NetApp/netAppAccounts",
+                    "apiVersion": "2020-06-01",
+                    "name": "[parameters('netAppAccountName')]",
+                    "location": "[parameters('location')]",
+                    "properties": {
+
+                    }
+                },
+                {
+                    "type": "Microsoft.NetApp/netAppAccounts/capacityPools",
+                    "apiVersion": "2020-06-01",
+                    "name": "[concat(parameters('netAppAccountName'),'/',parameters('netAppPoolName'))]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.NetApp/netAppAccounts', parameters('netAppAccountName'))]"
+                    ],
+                    "properties": {
+                        "serviceLevel": "[parameters('serviceLevel')]",
+                        "size": "[parameters('poolSizeBytes')]"
+                    }
+                }
+            ],
+            "outputs":{
+            }
+        },
+        "resourceGroup": "ResourceGroup",
+        "parameters":{
+            "resourcePrefix": {
+                "value": "[parameters('resourcePrefix')]"
+            },
+            "adUsername": {
+                "value":"[parameters('DAUser_domainadmin')]"
+            },
+            "smbServerName":{
+                "value":"concat(parameters('resourcePrefix'),'-anf')"
+            },
+            "dnsIpAddress":{
+                "value":"10.0.6.4"
+            },
+            "domainName":{
+                "value":"parameters('ADDS_domainName')"
+            },
+            "virtualNetworkSubscriptionId":{
+                "value":"[subscription().subscriptionId]"
+            },
+            "virtualNetworkResourceGroupName": {
+                "value":"[resourceGroup().name]"
+            },
+            "virtualNetworkName":{
+                "value": "[parameters('ADDS_vnetName')]"
+            }
+        }
+    }
+}
