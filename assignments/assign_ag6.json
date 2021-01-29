@@ -16,7 +16,7 @@
       "scope": "80b2bb8e-5d9d-4935-83d4-51c14f2bd3f1",
       "parameters": {
         "resourcePrefix": {
-            "value": "z95"
+            "value": "z94"
         },
         "ADDS_domainName": {
             "value": "azureglobal6.onmicrosoft.com"
@@ -24,13 +24,13 @@
         "ADDS_emailNotifications": {
             "value": "dennis.payne@microsoft.com" 
         },
-        "script_deployment-user-resource-id": {
+        "script_executionUserResourceID": {
           "value": "/subscriptions/80b2bb8e-5d9d-4935-83d4-51c14f2bd3f1/resourceGroups/TenantOps/providers/Microsoft.ManagedIdentity/userAssignedIdentities/wvd-deployer"
         },
-        "script_deployment-user-object-id": {
+        "script_executionUserObjectID": {
           "value": "a642c6a9-7218-4bb7-b257-eb275b85f17f"
         },
-        "keyvault_access-user-object-id": {
+        "keyvault_OwnerUserObjectID": {
           "value": "1d5c8d66-50e6-4894-b296-f4f8d99f325a"
         }
       },
