@@ -76,7 +76,7 @@
         "value": "[parameters('resourcePrefix')]"
       },
       "emailNotifications": {
-        "value": "[parameters('ADDS_emailNotifications')]"
+        "value": "[parameters('adds_emailNotifications')]"
       },
       "sku": {
         "value": "Enterprise"
@@ -85,7 +85,7 @@
         "value": "FullySynced"
       },
       "domainName": {
-        "value": "[parameters('ADDS_domainName')]"
+        "value": "[parameters('adds_domainName')]"
       },
       "filteredSync": {
         "value": "Disabled"
@@ -95,12 +95,12 @@
           "notifyGlobalAdmins": "Enabled",
           "notifyDcAdmins": "Enabled",
           "additionalRecipients": [
-            "[parameters('ADDS_emailNotifications')]"
+            "[parameters('adds_emailNotifications')]"
           ]
         }
       },
       "vnetName": {
-        "value": "[parameters('ADDS_vnetName')]"
+        "value": "[parameters('adds_vnetName')]"
       }
     }
   }

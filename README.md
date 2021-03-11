@@ -96,7 +96,7 @@ The blueprint includes the following required parameters.
 
 | Parameter | Example Value | Purpose |  
 |-|-|-|  
-|**ADDS_domainName**|wvdbp.contoso.com|The domainname for the Azure ADDS domain that will be created|
+|**adds_domainName**|wvdbp.contoso.com|The domainname for the Azure ADDS domain that will be created|
 |**script_executionUserResourceID**|Resource ID Path|Resource ID for the Managed Identity that will execute embedded deployment scripts.|
 |**script_executionUserObjectID**|xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|Object ID for the Managed Identity that will execute embedded deployment scripts.|
 |**keyvault_ownerUserObjectID**|xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|Object ID of the user that will get access to the Key Vault. To retrieve this value go to Microsoft Azure Portal > Azure Active Directory > Users > (user) and copy the User’s Object ID.|
@@ -108,7 +108,7 @@ These optional parameters either have default values or, by default, do not have
 | Parameter | Default Value | Purpose |
 |-|-|-|
 |**resourcePrefix**|WVD|A text string prefixed to the begining of each resource name.|
-|**ADDS_emailNotifications**|wvdbpadmin@contoso.com|An email account that will receive ADDS notifications|
+|**adds_emailNotifications**|wvdbpadmin@contoso.com|An email account that will receive ADDS notifications|
 |**_ScriptURI**|https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts|URI where Powershell scripts executed by the blueprint are located.|
 |**log-analytics_service-tier**|PerNode|Log Analytics Service tier: Free, Standalone, PerNode or PerGB2018.|
 |**log-analytics_data-retention**|365|Number of days data will be retained.|
@@ -119,7 +119,7 @@ These optional parameters either have default values or, by default, do not have
 |**vnet_adds-subnet-address-prefix**|10.0.6.0/24|Subnet for Azure ADDS.|
 |**vnet_logs-retention-in-days**|365|Number of days vnet logs will be retained.|
 |**keyvault_logs-retention-in-days**|365|Number of days keyvault logs will be retained.|
-|**DAUser_adminuser**|domainadmin@{ADDS_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
+|**daUser_AdminUser**|domainadmin@{adds_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
 |**wvdHostpool_hostpoolname**|{resourcePrefix}-wvd-hp||
 |**wvdHostpool_workspaceName**|{resourcePrefix}-wvd-ws||
 |**wvdHostpool_hostpoolDescription**|||

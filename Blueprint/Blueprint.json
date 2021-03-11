@@ -20,13 +20,50 @@
         },
         "defaultValue": 10
       },
-      "ADDS_domainName": {
+      "wvdHostpool_vmNumberOfInstances": {
+        "type": "int",
+        "metadata": {
+          "displayName": "Total WVD users to create.",
+          "description": "Total Number of WVD users to create."
+        },
+        "defaultValue": 2
+      },
+      "wvdHostpool_vmSize": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Azure VM size of the session host(s).",
+          "description": "The size of the Azure VM used when session hosts are created."
+        },
+        "defaultValue": "Standard_D4s_v3"
+      },
+      "wvdHostpool_loadBalancerType": {
+        "type": "string",
+        "metadata": {
+          "displayName": "The host pool session balancing method.",
+          "description": "The method of balancing user session load on session hosts, in the host pool (wide vs. deep)"
+          },
+          "AllowedValues": [
+            "DepthFirst",
+            "BreadthFirst",
+            "Persistent"
+          ],
+          "defaultValue": "BreadthFirst"
+      },
+      "wvdHostpool_maxSessionLimit": {
+        "type": "int",
+        "metadata": {
+          "displayName": "User session limit per session host, in the host pool",
+          "description": "The maximum number of user sessions per session host in the host pool"
+          },
+          "defaultValue": 512
+      },
+      "adds_domainName": {
         "type": "string",
         "metadata": {
           "displayName": "Azure ADDS Domain"
         }
       },
-      "ADDS_vnetName": {
+      "adds_vnetName": {
         "type": "string",
         "metadata": {
           "displayName": "Azure ADDS vNet"
@@ -34,7 +71,7 @@
         "defaultValue": "[concat(parameters('resourcePrefix'), '-sharedsvcs-vnet')]",
         "allowedValues": []
       },
-      "ADDS_emailNotifications": {
+      "adds_emailNotifications": {
         "type": "string",
         "metadata": {
           "displayName": "Notification email addresses"
@@ -74,7 +111,7 @@
           "displayName": "Script URI",
           "description": "URI where Powershell scripts executed by the blueprint are located."
         },
-        "defaultValue": "https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts"
+        "defaultValue": "https://agblueprintsa.blob.core.windows.net/blueprintscripts"
       },
       "log-analytics_service-tier": {
         "type": "string",
@@ -152,13 +189,13 @@
         },
         "defaultValue": 365
       },
-      "DAUser_adminuser": {
+      "daUser_AdminUser": {
         "type": "string",
         "metadata": {
           "displayName": "Admin User UPN",
           "description": "This account will be a member of AAD DC Administrators and Local Admin on deployed VMs."
         },
-        "defaultValue": "[concat( 'domainadmin@', parameters('ADDS_domainName'))]"
+        "defaultValue": "[concat( 'domainadmin@', parameters('adds_domainName'))]"
       },
       "wvdHostpool_hostpoolname": {
         "type": "string",
@@ -262,7 +299,7 @@
         "type": "string",
         "metadata": {
           "displayName": "networkSecurityGroupId (WVDHostpool)",
-          "description": "The resource id of an existing network security group."
+          "description": "The resource ID of an existing network security group."
         },
         "defaultValue": "",
         "allowedValues": []
@@ -280,7 +317,7 @@
         "type": "string",
         "metadata": {
           "displayName": "customRdpProperty (WVDHostpool)",
-          "description": "Hostpool rdp properties."
+          "description": "Hostpool RDP properties."
         },
         "defaultValue": "",
         "allowedValues": []

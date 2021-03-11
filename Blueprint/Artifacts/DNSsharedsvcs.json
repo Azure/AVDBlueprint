@@ -77,7 +77,7 @@
           "value": "[resourceGroup().name]"
         },
         "srcVnet": {
-          "value": "[parameters('ADDS_vnetName')]"
+          "value": "[parameters('adds_vnetName')]"
         },
         "srcSubnet": {
           "value": "AzureADDSSubnet"
@@ -86,7 +86,7 @@
           "value": "[resourceGroup().name]"
         },
         "dstvNet": {
-          "value": "[parameters('ADDS_vnetName')]"
+          "value": "[parameters('adds_vnetName')]"
         }
       }
     }
