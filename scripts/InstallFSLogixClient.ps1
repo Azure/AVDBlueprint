@@ -1,5 +1,5 @@
 IF (-not(Test-path C:\Windows\Temp\FSLogixAppsSetup.exe)){
-    Invoke-WebRequest -Uri https://agblueprintsa.blob.core.windows.net/blueprintscripts/FSLogixAppsSetup.exe -OutFile C:\Windows\Temp\FSLogixAppsSetup.exe
+    Invoke-WebRequest -Uri https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts/FSLogixAppsSetup.exe -OutFile C:\Windows\Temp\FSLogixAppsSetup.exe
 } 
 ELSE {write-warning "File Already Exists!"}
 
