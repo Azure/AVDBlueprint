@@ -125,7 +125,7 @@ Get-Date | Out-File -append $ScriptLogActionsTimes
 "______________________________" | Out-File -append $ScriptLogActionsTimes
 
 $DomainConfigItemsZip = "$CTempPath\DomainConfigItems.zip"
-Invoke-WebRequest -Uri 'https://agblueprintsa.blob.core.windows.net/blueprintscripts/DomainConfigItems.zip' -OutFile $DomainConfigItemsZip
+Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts/DomainConfigItems.zip' -OutFile $DomainConfigItemsZip
 
 If (Test-Path $DomainConfigItemsZip){
 Expand-Archive -LiteralPath $DomainConfigItemsZip -DestinationPath $CTempPath -ErrorAction SilentlyContinue
