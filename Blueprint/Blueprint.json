@@ -111,7 +111,7 @@
           "displayName": "Script URI",
           "description": "URI where Powershell scripts executed by the blueprint are located."
         },
-        "defaultValue": "https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts"
+        "defaultValue": "https://agblueprintsa.blob.core.windows.net/blueprintscripts"
       },
       "log-analytics_service-tier": {
         "type": "string",
