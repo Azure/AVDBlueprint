@@ -96,7 +96,7 @@ The blueprint includes the following required parameters.
 
 | Parameter | Example Value | Purpose |  
 |-|-|-|  
-|**ADDS_domainName**|wvdbp.contoso.com|The domainname for the Azure ADDS domain that will be created|
+|**adds_domainName**|wvdbp.contoso.com|The domainname for the Azure ADDS domain that will be created|
 |**script_executionUserResourceID**|Resource ID Path|Resource ID for the Managed Identity that will execute embedded deployment scripts.|
 |**script_executionUserObjectID**|xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|Object ID for the Managed Identity that will execute embedded deployment scripts.|
 |**keyvault_ownerUserObjectID**|xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx|Object ID of the user that will get access to the Key Vault. To retrieve this value go to Microsoft Azure Portal > Azure Active Directory > Users > (user) and copy the User’s Object ID.|
@@ -108,7 +108,7 @@ These optional parameters either have default values or, by default, do not have
 | Parameter | Default Value | Purpose |
 |-|-|-|
 |**resourcePrefix**|WVD|A text string prefixed to the begining of each resource name.|
-|**ADDS_emailNotifications**|wvdbpadmin@contoso.com|An email account that will receive ADDS notifications|
+|**adds_emailNotifications**|wvdbpadmin@contoso.com|An email account that will receive ADDS notifications|
 |**_ScriptURI**|https://raw.githubusercontent.com/Azure/WVDBlueprint/main/scripts|URI where Powershell scripts executed by the blueprint are located.|
 |**log-analytics_service-tier**|PerNode|Log Analytics Service tier: Free, Standalone, PerNode or PerGB2018.|
 |**log-analytics_data-retention**|365|Number of days data will be retained.|
@@ -119,7 +119,7 @@ These optional parameters either have default values or, by default, do not have
 |**vnet_adds-subnet-address-prefix**|10.0.6.0/24|Subnet for Azure ADDS.|
 |**vnet_logs-retention-in-days**|365|Number of days vnet logs will be retained.|
 |**keyvault_logs-retention-in-days**|365|Number of days keyvault logs will be retained.|
-|**DAUser_adminuser**|domainadmin@{ADDS_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
+|**daUser_AdminUser**|domainadmin@{adds_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
 |**wvdHostpool_hostpoolname**|{resourcePrefix}-wvd-hp||
 |**wvdHostpool_workspaceName**|{resourcePrefix}-wvd-ws||
 |**wvdHostpool_hostpoolDescription**|||
@@ -251,6 +251,61 @@ help .\Remove-AzWvdBpDeployment.ps1
 ```
 
 ## Tips
+
+* About the Group Policy settings that are applied to the WVD session host computers, during the Blueprint deployment. There are two 
+sections of Group Policy settings applied to the WVD session hosts:  
+
+    - **FSLogix settings**
+    - **"RDP session host lockdown" settings**  
+
+The FSLogix are there to enable the FSLogix profile management solution.  During Blueprint deployment, some of the parameters are evaluated and used to create a variable for the FSLogix profile share UNC, as it exits in this particular deployment.  That value is then written to a new GPO that is created just prior to the share UNC enumeration, and is only applied to an OU object, also created prior to the share UNC enumeration.  
+With respect to the **"RDP session host lockdown"** settings, those are set by default, based on various security recommendations, made by Microsoft and others. The **"RDP session host lockdown** settings are all set in a script file called **'Create-AzAADDSJoinedFileshare.ps1'**.  There is one setting that is not available in that file, which is a Group Policy start script entry, for a script that is downloaded and run by each WVD session host, on their next Startup ***after they have received and applied their new group policy***.  Here is the workflow of the chain of events that lead up to the session hosts becoming fully functional.
+
+1. WVD Session Hosts are created, and joined to the AAD DS domain.  This happens in the artifact **"WVDDeploy.json"**.
+2. Later the "management VM" is created, and joined to the domain.  This domain join triggers a reboot, and the JoinDomain extension waits for the machine to reboot and check in before the "MGMTVM" artifact continues.
+3. After the management VM reboots, the next section of "MGMTVM" artifact initiates running a custom script, which is downloaded from Azure storage, to the management VM.
+4. The Managment VM runs the 'Create-AzAADDSJoinedFileshare.ps1' script, which has two sections: 1) Create storage for FSLogix, 2) Run the domain management code
+5. The domain management code does the following for the session hosts:
+    1. Creates a new GPO called **"WVD Session Host policy"**        
+    2. Creates a new OU called **"WVD Computers"**
+    3. Links the WVD GPO to the WVD OU
+    4. Restores a previous GP export, which imports a Startup script, and also copies that Startup script to the current location in SYSVOl policies
+    5. Moves only the WVD session host computer objects to the new WVD OU
+    6. Invokes a command to each VM in the WVD OU, to immediately refresh Group Policy
+    7. Invokes a command to each VM in the WVD OU, to reboot with a 5 second delay, so that the VMs can run the FSLogix startup script, which installs the FSLogix software.
+        
+Now for the tip.  If there is a particular setting that you do not want to apply, you could download a copy of the script **'Create-AzAADDSJoinedFileshare.ps1'**.  Then you can customize the script file by editing out the line that applies a particular group policy setting that you may not want to apply to the WVD sessions host.  An example will be listed just below.  
+So that the WVD session hosts can be customized to your environment, you would then create an Azure storage container, set to anonymous access, then upload your script to that location.  
+Lastly, you would edit the Blueprint artifact file "MGMTVM", currently line 413.  But that section looks like this:
+
+        "properties": {
+          "publisher": "Microsoft.Compute",
+          "type": "CustomScriptExtension",
+          "typeHandlerVersion": "1.7",
+          "autoUpgradeMinorVersion": true,
+          "settings": {
+            "fileUris": [
+                "https://agblueprintsa.blob.core.windows.net/blueprintscripts/Create-AzAADDSJoinedFileshare.ps1"  
+
+You would edit the value inside the quotes, to point to your specific storage location.  For example, you might change yours to something like this:
+
+            "fileUris": [
+                "https://contosoblueprintsa.blob.core.windows.net/blueprintscripts/Create-AzAADDSJoinedFileshare.ps1"
+
+Lastly, you would edit the script **'Create-AzAADDSJoinedFileshare.ps1'** to remove the setting you are interested in.  Here are the settings details:
+
+#RDP Lockdowns
+```powershell
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableAudioCapture" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableCameraRedir" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableCcm" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableCdm" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableClip" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisableLPT" -Value 1  
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fDisablePNPRedir" -Value 1  
+```
+The group policy settings come from Microsoft documentation: [Group Policy Settings Reference Spreadsheet for Windows 10 ...](https://www.microsoft.com/en-us/download/101451).
+
 
 * [Visual Studio Code](https://code.visualstudio.com/) is a Microsoft provided suite available for editing, importing, and assigning the Blueprints. If using VS Code, the following extensions will greatly assist the efforts:|
 

@@ -162,7 +162,7 @@
           "value": "[parameters('script_executionUserResourceID')]"
         },
         "ad_usernameUPN": {
-          "value": "[parameters('DAUser_adminuser')]"
+          "value": "[parameters('daUser_AdminUser')]"
         }
       }
     }

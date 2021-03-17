@@ -58,7 +58,7 @@
             },
             "defaultValue": "user"
           },
-          "userCount": {
+          "wvdUsers_userCount": {
             "type": "int",
             "metadata": {
               "displayName": "Total test users",
@@ -117,7 +117,7 @@
             }, 
             "copy": {
               "name": "usersecrets",
-              "count": "[parameters('userCount')]"
+              "count": "[parameters('wvdUsers_userCount')]"
             }
           },
           {
@@ -126,7 +126,7 @@
             "name": "createWVDUsers",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-              "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key-vault-name'), concat(parameters('userPrefix'), parameters('userCount')))]"
+              "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key-vault-name'), concat(parameters('userPrefix'), parameters('wvdUsers_userCount')))]"
             ],
             "kind": "AzurePowerShell",
             "identity": {
@@ -139,7 +139,7 @@
             "properties": {
               "forceUpdateTag": "[parameters('utcValue')]",
               "azPowerShellVersion": "5.4",
-              "arguments": "[concat('-totalUsers', ' ''', parameters('userCount'), ''' ', '-prefix', ' ''', parameters('userPrefix'), ''' ', '-domainname', ' ''', parameters('domainname'), ''' ', '-keyvault', ' ', variables('key-vault-name'), ' ', '-forcePasswordChange', ' ', variables('forcePasswordChange'), ' ', '-appGroupRG', ' ''', resourceGroup().name, ''' ', '-wvdAppGroup', ' ''', variables('wvd_appGroupName'), ''' ', '-wvdRolename', ' ''', variables('wvd_UserRole'), ''' ', '-adGroup', ' ''', parameters('aad_wvduserGroup'), '''')]",
+              "arguments": "[concat('-totalUsers', ' ''', parameters('wvdUsers_userCount'), ''' ', '-prefix', ' ''', parameters('userPrefix'), ''' ', '-domainname', ' ''', parameters('domainname'), ''' ', '-keyvault', ' ', variables('key-vault-name'), ' ', '-forcePasswordChange', ' ', variables('forcePasswordChange'), ' ', '-appGroupRG', ' ''', resourceGroup().name, ''' ', '-wvdAppGroup', ' ''', variables('wvd_appGroupName'), ''' ', '-wvdRolename', ' ''', variables('wvd_UserRole'), ''' ', '-adGroup', ' ''', parameters('aad_wvduserGroup'), '''')]",
               "primaryScriptUri": "[parameters('createWVDUserScriptURI')]",
               "timeout": "PT4H",
               "cleanupPreference": "OnSuccess",
@@ -160,7 +160,7 @@
           "value": "[parameters('resourcePrefix')]"
         },
         "domainName": {
-          "value": "[parameters('ADDS_domainName')]"
+          "value": "[parameters('adds_domainName')]"
         },
         "hostpoolName": {
           "value": "[parameters('wvdHostpool_hostpoolName')]"
@@ -168,7 +168,7 @@
         "userPrefix": {
           "value": "[parameters('wvdUsers_userPrefix')]"
         },
-        "userCount": {
+        "wvdUsers_userCount": {
             "value": "[parameters('wvdUsers_userCount')]"
         },
         "aad_wvduserGroup": {

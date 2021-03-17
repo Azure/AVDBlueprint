@@ -90,7 +90,6 @@
           }
         }
       },
-      //TODO #1 add rando chars to KV name
       "variables": {
         "deployment-prefix": "[concat(parameters('resourcePrefix'), '-sharedsvcs')]",
         "key-vault-name": "[concat(variables('deployment-prefix'), '-kv')]",
@@ -99,8 +98,6 @@
         "enable-vault-for-diskEncryption": true,
         "vault-sku": "Premium",
         "ad-domain-admin-user-password-secret-value": "[concat(toUpper(uniqueString(parameters('secret-unique-value4'))), uniqueString(parameters('secret-unique-value5')), toLower(uniqueString(parameters('secret-unique-value6'))), '!')]",
-        "oms-workspace-resourceGroup": "[concat(variables('deployment-prefix'), '-rg')]",
-        "oms-workspace-name": "[concat(variables('deployment-prefix'), '-log')]",
         "enableSoftDelete": true,
         "enablePurgeProtection": true,
         "uniqueString": "[uniqueString(subscription().id, concat(variables('deployment-prefix'), '-log'))]",
@@ -186,39 +183,6 @@
             }
           },
           "resources": [
-            {
-              "type": "Microsoft.KeyVault/vaults/providers/diagnosticsettings",
-              "name": "[concat(variables('key-vault-name'), '/Microsoft.Insights/service')]",
-              "apiVersion": "2016-09-01",
-              "location": "[resourceGroup().location]",
-              "dependsOn": [
-                "[concat('Microsoft.KeyVault/vaults/', variables('key-vault-name'))]"
-              ],
-              "properties": {
-                "storageAccountId": "[resourceId(variables('oms-workspace-resourceGroup'), 'Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]",
-                "workspaceId": "[resourceId(variables('oms-workspace-resourceGroup'), 'Microsoft.OperationalInsights/workspaces', variables('oms-workspace-name'))]",
-                "logs": [
-                  {
-                    "category": "AuditEvent",
-                    "enabled": true,
-                    "retentionPolicy": {
-                      "enabled": true,
-                      "days": "[parameters('logs-retention-in-days')]"
-                    }
-                  }
-                ],
-                "metrics": [
-                  {
-                    "category": "AllMetrics",
-                    "enabled": true,
-                    "retentionPolicy": {
-                      "enabled": true,
-                      "days": "[parameters('logs-retention-in-days')]"
-                    }
-                  }
-                ]
-              }
-            }
           ]
         },
         {

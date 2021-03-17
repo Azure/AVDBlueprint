@@ -6,7 +6,7 @@
     "displayName": "Network Security Group template",
     "description": "",
     "dependsOn": [
-      "log-analytics"
+      
     ],
     "template": {
       "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
@@ -31,8 +31,6 @@
       },
       "variables": {
         "deployment-prefix": "[concat(parameters('resourcePrefix'), '-sharedsvcs')]",
-        "oms-workspace-resourceGroup": "[concat(variables('deployment-prefix'), '-rg')]",
-        "oms-workspace-name": "[concat(variables('deployment-prefix'), '-log')]",
         "empty-array": [],
         "uniqueString": "[uniqueString(subscription().id, concat(variables('deployment-prefix'), '-log'))]",
         "diagnostic-storageAccount-prefix": "[concat(replace(variables('deployment-prefix'), '-', ''), 'diag')]",
@@ -741,41 +739,6 @@
             ]
           },
           "resources": []
-        },
-        {
-          "type": "Microsoft.Network/networkSecurityGroups/providers/diagnosticSettings",
-          "name": "[concat(variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].name, '-nsg','/Microsoft.Insights/service')]",
-          "apiVersion": "2017-05-01-preview",
-          "location": "[resourceGroup().location]",
-          "copy": {
-            "count": "[length(variables('network-security-groups'))]",
-            "name": "nsgDiagnosticLoop"
-          },
-          "dependsOn": [
-            "nsgLoop"
-          ],
-          "properties": {
-            "storageAccountId": "[resourceId(variables('oms-workspace-resourceGroup'), 'Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]",
-            "workspaceId": "[resourceId(variables('oms-workspace-resourceGroup'), 'Microsoft.OperationalInsights/workspaces', variables('oms-workspace-name'))]",
-            "logs": [
-              {
-                "category": "NetworkSecurityGroupEvent",
-                "enabled": true,
-                "retentionPolicy": {
-                  "enabled": true,
-                  "days": "[parameters('logs-retention-in-days')]"
-                }
-              },
-              {
-                "category": "NetworkSecurityGroupRuleCounter",
-                "enabled": true,
-                "retentionPolicy": {
-                  "enabled": true,
-                  "days": "[parameters('logs-retention-in-days')]"
-                }
-              }
-            ]
-          }
         }
       ],
       "outputs": {}
