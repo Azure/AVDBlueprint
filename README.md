@@ -9,69 +9,97 @@ Azure Blueprints utilize ["artifacts"](https://docs.microsoft.com/en-us/azure/go
 * Azure Resource Manager (ARM) templates
 * Resource Groups
 
-The WVD Blueprints are meant to deploy an entire environment, including Azure Active Directory Domain Services (AAD DS), a management virtual machine (VM), networking, WVD infrastructure, and related resources, in a turn-key fashion.   The following is a guide to help accomplish customizing to your environment.
-
+The WVD Blueprints are meant to deploy an entire environment, including Azure Active Directory Domain Services (AAD DS), a management virtual machine (VM), networking, WVD infrastructure, and related resources, in a turn-key fashion.   The following is a guide to help accomplish customizing to your environment.  
 ## Recommended Reading
 
 1) [Azure Blueprints] (<https://docs.microsoft.com/en-us/azure/governance/blueprints/overview>)
 2) [Windows Virtual Desktop] (<https://docs.microsoft.com/en-us/azure/virtual-desktop/>)
 
+
+### Tip: Create a Resource Group for your Blueprint resources
+During the Blueprint deployment process, you will be creating some resources that you may want to retain after the blueprint has been deployed.
+Depending on various factors, you may create a managed identity, a storage blob, etc. To that end, you could create a resource group, and in that resource group you only create items that are related to your Blueprint work. Another reason for this is that you can build and deconstruct a Blueprint, over and over, yet retain some of the core objects necessary, which will save time and effort.
+
+### Tip: Development and/or Production environments can be used to work with the Blueprint code**
+Development environments are well suited to streamlining workflows such as [“import”](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/import-export-ps) and [“assign”](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/manage-assignments-ps) the Blueprints.
+PowerShell or CloudShell can be utilized for various tasks. If using PowerShell, you may need to import the [Az.Blueprint module](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/manage-assignments-ps#add-the-azblueprint-module) for PowerShell.
 ## Prerequisites
 
-1. Two “identities” are required to successfully assign (deploy) the Azure WVD Blueprints:  
-    * An [Azure Global Administrator](https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference).  
-    > The Azure Global Administrator is a person that has complete permission to an Azure subscription. This is required because modifications will be made at the directory and subscription levels.
+1. **An [Azure Global Administrator](https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference) account**  
+An Azure Global administrator account is required to successfully assign (deploy) the Azure WVD Blueprints.
 
-    * An [Azure Managed Identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview)  
-    > The Azure Managed Identity exists within Azure and can securely store and retrieve credentials from Azure Key Vault during the deployment.  
+1. **An [Azure Managed Identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview)**  
+The Azure Managed Identity exists within Azure and can securely store and retrieve credentials from Azure Key Vault during the deployment. There are two types of Azure Managed Identies: 'System Assigned' and 'User Assigned'. For the purpose of this WVD Blueprint, the type 'User Assigned Managed Identity' will be utilized.  The instructions for creating a managed identity are here: **[Create a user-assigned managed identity](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/how-to-manage-ua-identity-portal#create-a-user-assigned-managed-identity)**  
 
-2. An [Azure subscription](https://azure.microsoft.com/en-us/free/) with sufficient credits to deploy the environment, and keep it running at the desired levels.  
+    **NOTE:** In the case of “greenfield” deployments, the level of assignment will need to be the Azure subscription.  The WVD Blueprint, by default, creates objects at the subscription level during the blueprint deployment such as Azure AD DS.  
+1. **Security configuration in the environment for a Blueprint Operator**  
+The management of Blueprint definitions and Blueprint assignments are two different roles, thus the need for two different identities. A blueprint definition can use either system-assigned or user-assigned managed identities. However, when using the **Blueprint Operator** role, the blueprint definition needs to be configured to use a ***user-assigned managed identity***. Additionally, the account or security group being granted the Blueprint Operator role needs to be granted the Managed Identity Operator role on the user-assigned managed identity. Without this permission, blueprint assignments fail because of lack of permissions.  
 
-3. A development environment can be used to help work with the Blueprint code, as well as [“import”](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/import-export-ps) and [“assign”](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/manage-assignments-ps) the Blueprints.  
-   PowerShell can be utilized with the [Az.Blueprint module](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/manage-assignments-ps#add-the-azblueprint-module) for PowerShell.  
+    The high-level configuration steps are as follows (documentation [here](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/configure-for-blueprint-operator)):  
 
-    If you've not used Azure Blueprints before, register the resource provider through Azure PowerShell with this PowerShell command:  
-
-    `Register-AzResourceProvider -ProviderNamespace Microsoft.Blueprint`
-
-4. Open an instance of PowerShell, connect to your Azure account, then register the Azure AD provider to your account (if not already registered):
-
-    * `Connect-AzAccount`  
-    * `Register-AzResourceProvider -ProviderNamespace Microsoft.AAD`
-
-5. Create the Domain Controller Services service principal (if it does not already exist), with this PowerShell command
-
-    `New-AzureADServicePrincipal -AppId "2565bd9d-da50-47d4-8b85-4c97f669dc36"`
-
-    (more info on this topic) <https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal>
-
-6. Create a user-assigned managed identity within Azure, which will later be used to execute the blueprint.  Note that in the case of “greenfield” deployments, the level of assignment will need to be the Azure subscription.  The Blueprint creates objects at the subscription level during the blueprint deployment.
-
-    * Create an Azure security group (example: ‘Blueprint Operators’)  
-    * Add the managed identity to the Azure security group created in the previous step  
-    * Assign permissions to the group, to allow members to create objects at the subscription level  
+    * [Create an Azure security group](https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-groups-create-azure-portal) (example: ‘Blueprint Operators’)  
     * At the subscription level, assign roles to the group previously created, by going to the following location in the Azure Portal  
-       > **Azure Portal** -> **Home** -> **Subscriptions** -> (***your subscription***) -> **Access Control (IAM)**
+    > **Azure Portal** -> **Home** -> **Subscriptions** -> (***your subscription***) -> **Access Control (IAM)**  
+    * [Add the managed identity created in Step 2 of this document, and the Global Administrator accounts to the Azure security group](https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-groups-create-azure-portal#create-a-basic-group-and-add-members)  
+    * Assign permissions to the group, to allow members to create objects at the subscription level:
 
-7. Click **Add Role Assignments**, then add the following role assignments to the group you created earlier (step 6):
+        * [Blueprint Contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#blueprint-contributor)
+        * [Blueprint Operator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#blueprint-operator)
+        * [Managed Identity Operator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator)  
 
-    * [Blueprint Contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#blueprint-contributor)
-    * [Blueprint Operator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#blueprint-operator)
-    * [Managed Identity Operator](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator)
+    When correctly configured, the Role assignments for your Azure AD group, should look like this:  
 
-8. The managed identity must be assigned the **Owner** role at the subscription level.  The reason is that the managed identity needs full access during the deployment, for example to initiate the creation of an instance of Azure AD DS.  
+    ![Azure portal Access control (IAM) for Blueprint group](./images/BluePrint_GroupAccessControlDepiction.png)
 
-        **MORE INFO:** https://docs.microsoft.com/en-us/azure/cost-management-billing/manage/add-change-subscription-administrator  
+1. **An [Azure subscription](https://azure.microsoft.com/en-us/free/) with sufficient credits to deploy the environment, and keep it running at the desired levels**  
 
-9. Add the managed identity to the Global Administrators group in Azure AD.  The managed identity is going to be initiating the creation of users and virtual machines during the blueprint process.
+1. **Azure Blueprint resource provider registered to your subscription** through Azure PowerShell with this PowerShell command:  
 
-        **MORE INFO:** https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/configure-for-blueprint-operator  
+    ```PowerShell
+    Register-AzResourceProvider -ProviderNamespace Microsoft.Blueprint
+    ```
 
-10.  The Blueprint main file, and related artifact objects. These objects are publically available on Github.com. Once the Blueprint objects have been acquired, they need to be customized to each respective environment. The necessary customizations can be applied in a few different ways.
+    You should receive this output from the Register-AzResourceProvider command:  
 
-         
+    ```ProviderNamespace   Microsoft.Blueprint  
+    RegistrationState : Registering  
+    ResourceTypes     : {blueprints, blueprints/artifacts, blueprints/versions, blueprints/versions/artifacts…}  
+    Locations         : {}  
+    ```
 
-### Blueprint Objects and Purpose
+1. **Azure Active Directory provider registered to your subscription** (if not already registered):  
+Check the current provider registration status in your subscription:  
+
+    ```powershell
+    Get-AzResourceProvider -ListAvailable | Select-Object ProviderNamespace, RegistrationState
+    ```
+
+    If necessary, register the Azure AD resource provider:
+
+    ```powershell
+    Register-AzResourceProvider -ProviderNamespace Microsoft.AAD
+    ```
+
+1. **[Domain Controller Services service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)** (if it does not already exist), with this PowerShell command
+
+    ```powershell
+    New-AzureADServicePrincipal -AppId "2565bd9d-da50-47d4-8b85-4c97f669dc36"
+    ```  
+
+1. **Managed identity assigned the Owner role at the subscription level**  
+The reason is that the managed identity needs full access during the deployment, for example to initiate the creation of an instance of Azure AD DS.  
+
+    **MORE INFO:** [Add or change Azure subscription administrators](https://docs.microsoft.com/en-us/azure/cost-management-billing/manage/add-change-subscription-administrator)  
+
+1. **The managed identity object added to the Global Administrators group in Azure AD**  
+The managed identity is likely going to be initiating the creation of users and virtual machines during the blueprint process.  
+ 
+    **MORE INFO:** [Configure your environment for a Blueprint Operator](https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/configure-for-blueprint-operator)  
+
+1. **The Blueprint main file, and related artifact objects**  
+These objects are publicly available on Github.com. Once the Blueprint objects have been acquired, they need to be customized to each respective environment. The necessary customizations can be applied in a few different ways.  
+
+## Blueprint Objects and Purpose
 
 | Type | Object | Purpose |
 |-|-|-|  
@@ -143,7 +171,7 @@ These optional parameters either have default values or, by default, do not have
 
 ## Import, Publish and Assign the Blueprint
 
-1. Import the Blueprint - <https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/import-export-ps>\
+1. Import the Blueprint - <https://docs.microsoft.com/en-us/azure/governance/blueprints/how-to/import-export-ps>
 2. Publish the Blueprint - <https://docs.microsoft.com/en-us/azure/governance/blueprints/create-blueprint-portal>
 3. Assign the Blueprint - <https://docs.microsoft.com/en-us/azure/governance/blueprints/create-blueprint-portal>
 
@@ -163,29 +191,32 @@ There are several ways to get started with Azure Cloud Shell:
 
       ![Icon to launch the Cloud Shell from the Azure portal](./images/portal-launch-icon.png)
 
-2. Start PowerShell in Azure CloudShell ([more information here](https://docs.microsoft.com/en-us/azure/cloud-shell/overview#choice-of-preferred-shell-experience))
+1. Start PowerShell in Azure CloudShell ([more information here](https://docs.microsoft.com/en-us/azure/cloud-shell/overview#choice-of-preferred-shell-experience))
 
-3. Run the following command to clone the Azure WVDBlueprint repository to CloudDrive.
+1. Run the following command to clone the Azure WVDBlueprint repository to CloudDrive.  
 
-    ```azurepowershell-interactive
+    ```dos
     git clone https://github.com/Azure/WVDBlueprint.git $HOME/clouddrive/WVDBlueprint
     ```
-    >**TIP:**  Run ```dir $HOME/clouddrive``` to verify the repository was successfully cloned to your CloudDrive
 
-4. Run the following commands to import the required PowerShell modules needed to import the blueprint (if not previously installed)
+    **TIP:**  Run ```dir $HOME/clouddrive``` to verify the repository was successfully cloned to your CloudDrive  
+
+1. Run the following commands to import the required PowerShell modules needed to import the blueprint (if not previously installed)
 
     ```PowerShell
     Install-Module -Name Az.Blueprint
     Import-Module Az.Blueprint
     ```
 
-5. Run the following command to import the WVD Blueprint definition, and save it within the specified subscription or management group.
+1. Run the following command to import the WVD Blueprint definition, and save it within the specified subscription or management group.  
+
     ```powershell
     Import-AzBlueprintWithArtifact -Name "YourBlueprintName" -SubscriptionId "00000000-1111-0000-1111-000000000000" -InputPath "$HOME/clouddrive/WVDBlueprint/blueprint"
-    ```
-    >**NOTE:** The '-InputPath' argument must point to the folder where blueprint.json file is placed.
+    ```  
 
-6. From the Azure Portal, browse to [Azure Blueprint service tab](https://portal.azure.com/#blade/Microsoft_Azure_Policy/BlueprintsMenuBlade/GetStarted) and select "**Blueprint definitions**".  
+    **NOTE:** The '-InputPath' argument must point to the folder where blueprint.json file is placed.
+
+1. From the Azure Portal, browse to [Azure Blueprint service tab](https://portal.azure.com/#blade/Microsoft_Azure_Policy/BlueprintsMenuBlade/GetStarted) and select "**Blueprint definitions**".  
 You can review newly imported Blueprint definitions and follow instructions to edit, publish and assign blueprint. ([More information](https://docs.microsoft.com/en-us/azure/governance/blueprints/create-blueprint-portal#edit-a-blueprint))  
 
 ### Manage the Blueprint using local storage on a device (Windows instructions)  
@@ -194,37 +225,38 @@ You can manage the WVD Blueprint using a device that has a small amount of local
 
 1. Go the [WVD Blueprint Github repository main folder](https://github.com/Azure/WVDBlueprint).  
 
-2. Click or tap the down arrow on the green button called 'Code', then tap or click the option 'Download Zip'.  
+1. Click or tap the down arrow on the green button called 'Code', then tap or click the option 'Download Zip'.  
 
-      ![Image for Github Download Zip option](./images/GitDownloadZip.png)  
+      ![Image for Github Download Zip option](./images/GitDownloadZip2.png)  
 
-3. Once the .zip file is downloaded to your local device, you can expand the contents to any location of your choosing,
+1. Once the .zip file is downloaded to your local device, you can expand the contents to any location of your choosing,
 by double-clicking the downloaded .zip file, and then copying the main folder within the zip to any location, such as 'C:\WVDBlueprint-main'.  
 
-4. The next is to import the Blueprint to your Azure subscription.  There are the high-level steps to import the Blueprint:
+1. The next step is to import the Blueprint to your Azure subscription. These are the high-level steps to import the Blueprint:
 
-    1. Start PowerShell.
-    2. Run the following PowerShell commands to import the required modules needed to import the blueprint (if not previously installed)
+    * Start PowerShell.
+    * Run the following PowerShell commands to import the required modules needed to import the blueprint (if not previously installed)
 
     ```PowerShell
     Install-Module -Name Az.Blueprint
     Import-Module Az.Blueprint
-    ```
-    >**NOTE:** Installing the PowerShell 'Az' modules does not include the Az.Blueprint modules. If you have installed the 'Az' modules, you will still need to install the Az.Blueprint modules.  
+    ```  
 
-    3. Authenticate to your subscription by using the following PowerShell command
+    **NOTE:** Installing the PowerShell 'Az' modules does not include the Az.Blueprint modules. If you have installed the 'Az' modules, you will still need to install the Az.Blueprint modules.  
+
+1. Authenticate to your subscription by using the following PowerShell command
 
     ```powershell
     Connect-AzAccount
     ```
 
-    4. Run the following command to import the Blueprint to your Azure subscription:  
+1. Run the following command to import the Blueprint to your Azure subscription:  
 
     ```powershell    
     Import-AzBlueprintWithArtifact -Name "YourBlueprintName" -SubscriptionId "00000000-1111-0000-1111-000000000000" -InputPath 'C:\WVDBlueprint-main\Blueprint'
     ```
 
-6. From the Azure Portal, browse to [Azure Blueprint service tab](https://portal.azure.com/#blade/Microsoft_Azure_Policy/BlueprintsMenuBlade/GetStarted) and select "**Blueprint definitions**".  
+1. From the Azure Portal, browse to [Azure Blueprint service tab](https://portal.azure.com/#blade/Microsoft_Azure_Policy/BlueprintsMenuBlade/GetStarted) and select "**Blueprint definitions**".  
 You can review newly imported Blueprint definitions and follow instructions to edit, publish and assign blueprint. ([More information](https://docs.microsoft.com/en-us/azure/governance/blueprints/create-blueprint-portal#edit-a-blueprint))  
 
 ## Teardown
