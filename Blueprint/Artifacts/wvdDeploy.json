@@ -127,14 +127,14 @@
                   },
                   "defaultValue": ""
               },
-              "wvdHostpool_vmSize": {
+              "wvdHostPool_vmSize": {
                   "type": "string",
                   "metadata": {
                       "description": "The size of the session host VMs."
                   },
                   "defaultValue": ""
               },
-              "wvdHostpool_vmNumberOfInstances": {
+              "wvdHostPool_vmNumberOfInstances": {
                   "type": "int",
                   "metadata": {
                       "description": "Number of session hosts that will be created and added to the hostpool."
@@ -175,11 +175,11 @@
                   "defaultValue": ""
               },
               "vmGalleryImageSKU": {
-                  "type": "string",
-                  "metadata": {
-                      "description": "(Required when vmImageType = Gallery) Gallery image SKU."
-                  },
-                  "defaultValue": ""
+                "type": "string",
+                "metadata": {
+                    "description": "(Required when vmImageType = Gallery) Gallery image SKU."
+                },
+                "defaultValue": ""
               },
               "vmImageVhdUri": {
                   "type": "string",
@@ -315,14 +315,14 @@
                   },
                   "defaultValue": ""
               },
-              "wvdHostpool_maxSessionLimit": {
+              "wvdHostPool_maxSessionLimit": {
                   "type": "int",
                   "metadata": {
                       "description": "Maximum number of sessions."
                   },
                   "defaultValue": 99999
               },
-              "wvdHostpool_loadBalancerType": {
+              "wvdHostPool_loadBalancerType": {
                   "type": "string",
                   "allowedValues": [
                       "BreadthFirst",
@@ -457,7 +457,7 @@
           "variables": {
               "deployment-prefix": "[concat(parameters('resourcePrefix'), '-sharedsvcs')]",
               "key-vault-name": "[concat(variables('deployment-prefix'), '-kv')]",
-              "createVMs": "[greater(parameters('wvdHostpool_vmNumberOfInstances'),0)]",
+              "createVMs": "[greater(parameters('wvdHostPool_vmNumberOfInstances'),0)]",
               "rdshManagedDisks": "[if(equals(parameters('vmImageType'), 'CustomVHD'), parameters('vmUseManagedDisks'), bool('true'))]",
               "rdshPrefix": "[parameters('vmNamePrefix')]",
               "avSetSKU": "[if(variables('rdshManagedDisks'), 'Aligned', 'Classic')]",
@@ -474,7 +474,7 @@
                   "copy": [
                       {
                           "name": "rdshVmNamesCopy",
-                          "count": "[if(variables('createVMs'), parameters('wvdHostpool_vmNumberOfInstances'), 1)]",
+                          "count": "[if(variables('createVMs'), parameters('wvdHostPool_vmNumberOfInstances'), 1)]",
                           "input": {
                               "name": "[concat(variables('rdshPrefix'),copyIndex('rdshVmNamesCopy'))]"
                           }
@@ -499,8 +499,8 @@
                       "hostpoolType": "[parameters('hostpoolType')]",
                       "customRdpProperty": "[parameters('customRdpProperty')]",
                       "personalDesktopAssignmentType": "[parameters('personalDesktopAssignmentType')]",
-                      "maxSessionLimit": "[parameters('wvdHostpool_maxSessionLimit')]",
-                      "loadBalancerType": "[parameters('wvdHostpool_loadBalancerType')]",
+                      "maxSessionLimit": "[parameters('wvdHostPool_maxSessionLimit')]",
+                      "loadBalancerType": "[parameters('wvdHostPool_loadBalancerType')]",
                       "validationEnvironment": "[parameters('validationEnvironment')]",
                       "preferredAppGroupType": "[parameters('preferredAppGroupType')]",
                       "ring": null,
@@ -621,19 +621,19 @@
                               "value": "[parameters('vmGalleryImagePublisher')]"
                           },
                           "vmGalleryImageSKU": {
-                              "value": "[parameters('vmGalleryImageSKU')]"
+                            "value": "[parameters('vmGalleryImageSKU')]"
                           },
                           "rdshPrefix": {
                               "value": "[variables('rdshPrefix')]"
                           },
                           "rdshNumberOfInstances": {
-                              "value": "[parameters('wvdHostpool_vmNumberOfInstances')]"
+                              "value": "[parameters('wvdHostPool_vmNumberOfInstances')]"
                           },
                           "rdshVMDiskType": {
                               "value": "[parameters('vmDiskType')]"
                           },
                           "rdshVmSize": {
-                              "value": "[parameters('wvdHostpool_vmSize')]"
+                              "value": "[parameters('wvdHostPool_vmSize')]"
                           },
                           "enableAcceleratedNetworking": {
                               "value": false
@@ -729,10 +729,10 @@
               "value": "https://catalogartifact.azureedge.net/publicartifacts/Microsoft.Hostpool-ARM-1.0.14-preview/"
           },
           "hostpoolName": {
-              "value": "[parameters('wvdHostpool_hostpoolName')]"
+              "value": "[parameters('wvdHostPool_hostpoolName')]"
           },
           "hostpoolDescription": {
-              "value": "[parameters('wvdHostpool_hostpoolDescription')]"
+              "value": "[parameters('wvdHostPool_hostpoolDescription')]"
           },
           "location": {
               "value": "[resourceGroup().location]"
@@ -746,14 +746,14 @@
           "hostpoolType": {
               "value": "Pooled"
           },
-          "wvdhostpool_loadBalancerType": {
-              "value": "[parameters('wvdhostpool_loadBalancerType')]"
+          "wvdHostPool_loadBalancerType": {
+              "value": "[parameters('wvdHostPool_loadBalancerType')]"
           },
           "customRdpProperty": {
               "value": ""
           },
           "vmTemplate": {
-              "value": "[concat('{\"domain\":\"', parameters('adds_domainName'), '\",\"galleryImageOffer\":\"', parameters('wvdHostpool_vmGalleryImageOffer'), '\",\"galleryImagePublisher\":\"', parameters('wvdHostpool_vmGalleryImagePublisher'), '\",\"galleryImageSKU\":\"', parameters('wvdHostpool_vmGalleryImageSKU'), '\",\"imageType\":\"', parameters('wvdHostpool_vmImageType'), '\",\"imageUri\":null,\"customImageId\":null,\"namePrefix\":\"', parameters('wvdHostpool_vmNamePrefix'), '\",\"osDiskType\":\"', parameters('wvdHostpool_vmDiskType'), '\",\"useManagedDisks\":', parameters('wvdHostpool_vmUseManagedDisks'), ',\"wvdhostpool_vmSize\":{\"id\":\"Standard_D2s_v3\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"', parameters('wvdHostpool_vmGalleryImagePublisher'), '.',parameters('wvdHostpool_vmGalleryImageSKU'),'\"}')]"
+              "value": "[concat('{\"domain\":\"', parameters('adds_domainName'), '\",\"galleryImageOffer\":\"', parameters('wvdHostPool_vmGalleryImageOffer'), '\",\"galleryImagePublisher\":\"', parameters('wvdHostPool_vmGalleryImagePublisher'), '\",\"galleryImageSKU\":\"', parameters('wvdHostPool_vmGalleryImageSKU'), '\",\"imageType\":\"', parameters('wvdHostPool_vmImageType'), '\",\"imageUri\":null,\"customImageId\":null,\"namePrefix\":\"', parameters('wvdHostPool_vmNamePrefix'), '\",\"osDiskType\":\"', parameters('wvdHostPool_vmDiskType'), '\",\"useManagedDisks\":', parameters('wvdHostPool_vmUseManagedDisks'), ',\"wvdHostPool_vmSize\":{\"id\":\"Standard_D2s_v3\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"', parameters('wvdHostPool_vmGalleryImagePublisher'), '.',parameters('wvdHostPool_vmGalleryImageSKU'),'\"}')]"
           },
           "administratorAccountUsername": {
               "value": "[parameters('daUser_AdminUser')]"
@@ -767,23 +767,23 @@
           "vmLocation": {
               "value": "[resourceGroup().location]"
           },
-          "wvdhostpool_vmSize": {
-              "value": "[parameters('wvdhostpool_vmSize')]"
+          "wvdHostPool_vmSize": {
+              "value": "[parameters('wvdHostPool_vmSize')]"
           },
-          "wvdhostpool_vmNumberOfInstances": {
-              "value": "[parameters('wvdhostpool_vmNumberOfInstances')]"
+          "wvdHostPool_vmNumberOfInstances": {
+              "value": "[parameters('wvdHostPool_vmNumberOfInstances')]"
           },
           "vmNamePrefix": {
-              "value": "[parameters('wvdHostpool_vmNamePrefix')]"
+              "value": "[parameters('wvdHostPool_vmNamePrefix')]"
           },
           "vmImageType": {
               "value": "Gallery"
           },
           "vmDiskType": {
-              "value": "[parameters('wvdHostpool_vmDiskType')]"
+              "value": "[parameters('wvdHostPool_vmDiskType')]"
           },
           "vmUseManagedDisks": {
-              "value": "[parameters('wvdHostpool_vmUseManagedDisks')]"
+              "value": "[parameters('wvdHostPool_vmUseManagedDisks')]"
           },
           "existingVnetName": {
               "value": "[parameters('adds_vnetName')]"
@@ -837,28 +837,28 @@
               "value": ""
           },
           "vmGalleryImageOffer": {
-              "value": "[parameters('wvdHostpool_vmGalleryImageOffer')]"
+              "value": "[parameters('wvdHostPool_vmGalleryImageOffer')]"
           },
           "vmGalleryImagePublisher": {
-              "value": "[parameters('wvdHostpool_vmGalleryImagePublisher')]"
+              "value": "[parameters('wvdHostPool_vmGalleryImagePublisher')]"
           },
           "vmGalleryImageSKU": {
-              "value": "20h1-evd-o365pp"
+              "value": "[parameters('wvdHostPool_vmGalleryImageSKU')]"
           },
-          "wvdhostpool_maxSessionLimit": {
-              "value": "[parameters('wvdhostpool_maxSessionLimit')]"
+          "wvdHostPool_maxSessionLimit": {
+              "value": "[parameters('wvdHostPool_maxSessionLimit')]"
           },
           "workspaceResourceGroup": {
               "value": "[resourceGroup().name]"
           },
           "workspaceName": {
-              "value": "[parameters('wvdHostpool_workspaceName')]"
+              "value": "[parameters('wvdHostPool_workspaceName')]"
           },
           "workspaceLocation": {
               "value": "[resourceGroup().location]"
           },
           "allApplicationGroupReferences": {
-              "value": "[parameters('wvdHostpool_allApplicationGroupReferences')]"
+              "value": "[parameters('wvdHostPool_allApplicationGroupReferences')]"
           }
       }
     }

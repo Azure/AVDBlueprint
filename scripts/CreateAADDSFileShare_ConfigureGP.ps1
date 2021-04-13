@@ -117,6 +117,7 @@ $Scriptblock = {
     
 Connect-AzAccount -Identity
         
+# Set up a log to measure GP settings time to complete
 $CTempPath = 'C:\Temp'
 New-Item -ItemType Directory -Path $CTempPath
 $ScriptLogActionsTimes = 'C:\Temp\ScriptActionLogTimes.txt'
@@ -124,22 +125,19 @@ Get-Timezone | Out-File -FilePath $ScriptLogActionsTimes
 Get-Date | Out-File -append $ScriptLogActionsTimes
 "______________________________" | Out-File -append $ScriptLogActionsTimes
 
-$FSLogixGPSettingsZip = "$CTempPath\FSLogixGPSettings.zip"
-Invoke-WebRequest -Uri 'https://agblueprintsa.blob.core.windows.net/blueprintscripts/FSLogixGPSettings.zip' -OutFile $FSLogixGPSettingsZip
-
+# Download WVD post-install group policy settings zip file, and expand it
+$WVDPostInstallGPSettingsZip = "$CTempPath\WVD_PostInstall_GP_Settings.zip"
+Invoke-WebRequest -Uri 'https://agblueprintsa.blob.core.windows.net/blueprintscripts/WVD_PostInstall_GP_Settings.zip' -OutFile $WVDPostInstallGPSettingsZip
 If (Test-Path $FSLogixGPSettingsZip){
-Expand-Archive -LiteralPath $FSLogixGPSettingsZip -DestinationPath $CTempPath -ErrorAction SilentlyContinue
+Expand-Archive -LiteralPath $WVDPostInstallGPSettingsZip -DestinationPath $CTempPath -ErrorAction SilentlyContinue
 }
 
-$WVDFSLogixSWShare = "$" + "SoftwareShare" + " = " + "'\\$ENV:ComputerName\FSLogix'"
-$WVDFSLogixSWShare | Out-File -FilePath $CTempPath\InstallFSLogixClient.ps1
-$FSLogixInstallText = @'
+# Create a startup script for the session hosts, to run the Virtual Desktop Optimization Tool
+$WVDSHSWShare = "$" + "SoftwareShare" + " = " + "'\\$ENV:ComputerName\Software'"
+$WVDSHSWShare | Out-File -FilePath $CTempPath\PostInstallConfigureWVDSessionHosts.ps1
+$PostInstallWVDConfig = @'
 $CTempPath = 'C:\Temp'
 $VDOTZIP = "$CTempPath\VDOT.zip"
-
-If (Test-Path $SoftwareShare\FSLogixAppsSetup.exe){
- Start-Process $SoftwareShare\FSLogixAppsSetup.exe -Wait -ArgumentList "/quiet /install"
-}
 
 If (Test-Path "$SoftwareShare\VDOT.zip"){
  New-Item -ItemType Directory -Path $CTempPath -ErrorAction SilentlyContinue
@@ -153,22 +151,30 @@ If (Test-Path $VDOTZIP){
 If (Test-Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1"){
  $VDOTString = 'C:\Temp\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1 -Optimizations All -WindowsVersion .\2009 -Verbose'
  Invoke-Expression $VDOTString
- Set-ExecutionPolicy -ExecutionPolicy Restricted -Force
 }
-'@
-Add-Content -Path $CTempPath\InstallFSLogixClient.ps1 -Value $FSLogixInstallText
 
+# Rename the VDOT PowerShell script so that it doesn't run on every startup
+If (Test-Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1"){
+ Rename-Item -Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1" -NewName "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1.old"
+}
+
+Set-ExecutionPolicy -ExecutionPolicy Restricted -Force
+Shutdown -r -f -t 00
+'@
+Add-Content -Path $CTempPath\PostInstallConfigureWVDSessionHosts.ps1 -Value $PostInstallWVDConfig
+
+# Acquire FSLogix software for the group policy files only
+# since the FSLogix session host software is now included inbox
 $FSLogixZip = 'C:\Temp\FSLogixSW.zip'
-$FSLogixSW = 'C:\Temp\FSLogixSW'
-$FSLogixFileShare = "$CTempPath\FSLogixSW\x64\Release"
+$FSLogixSW = 'C:\Temp\Software\FSLogix'
+$SoftwareShare = "$CTempPath\Software"
 Invoke-WebRequest -Uri 'https://aka.ms/fslogix_download' -OutFile $FSLogixZip
 Expand-Archive -Path $FSLogixZip -DestinationPath $FSLogixSW
-New-SmbShare -Name "FSLogix" -Path "$CTempPath\FSLogixSW\x64\Release"
 
-$PolicyDefinitions = "$CTempPath\PolicyDefinitions"
-$Win10GPTemplateMSI = "$CTempPath\Win10GPTemplateFiles.msi"
-$Win10GPTemplatesFolder = "$CTempPath\Win10GPTFolder"
-# $CurrentVMName = $ENV:ComputerName
+# Set up a file share for the session hosts
+New-SmbShare -Name "Software" -Path $SoftwareShare
+
+# Create WVD GPO, WVD OU, link the two, then copy session host configuration start script to SYSVOL location
 $DeploymentPrefix = $ResourceGroupName.Split('-')[0]
 $Domain = Get-ADDomain
 $PDC = $Domain.PDCEmulator
@@ -176,53 +182,57 @@ $FQDomain = $Domain.DNSRoot
 $WVDPolicy = New-GPO -Name "WVD Session Host Policy"
 $PolicyID ="{" +  $WVDPolicy.ID + "}"
 $WVDComputersOU = New-ADOrganizationalUnit -Name 'WVD Computers' -DisplayName 'WVD Computers' -Path $Domain.DistinguishedName -Server $PDC -PassThru
-$VMsToManage = (Get-ADComputer -Filter * -Server $PDC -SearchBase $WVDComputersOU.DistinguishedName -SearchScope Subtree).name
-$WVDSessionHost1UNC = "\\" + $VMsToManage[0] + "\C$\Windows\PolicyDefinitions"
-Copy-Item -Path $WVDSessionHost1UNC -Destination "\\$FQDomain\SYSVOL\$FQDomain\Policies" -Recurse -Force
+New-GPLink -Target $WVDComputersOU.DistinguishedName -Name $WVDPolicy.DisplayName -LinkEnabled Yes
 
+# Get credentials and use those to move WVD session hosts to their new OU
+$KeyVault = Get-AzKeyVault -VaultName "*-sharedsvcs-kv"
+$DAUserUPN = (Get-AzADGroup -DisplayName "AAD DC Administrators" | Get-AzADGroupMember).UserPrincipalName
+$DAUserName = $DAUserUPN.Split('@')[0]
+$DAPass = (Get-AzKeyVaultSecret -VaultName $keyvault.VaultName -name $DAUserName).SecretValue
+$DACredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $DAUserUPN, $DAPass
+$WVDComputersToMove = Get-ADComputer -Filter * -Server $PDC| Where-Object {($_.DNSHostName -like "$DeploymentPrefix*" -and $_.DNSHostName -notlike "*mgmtvm*")}
+Foreach ($W in $WVDComputersToMove) {Move-ADObject -Credential $DACredential -Identity $W.DistinguishedName -TargetPath $WVDComputersOU.DistinguishedName -Server $PDC}
+
+# Create a "GPO Central Store", by copying a "PolicyDefinitions" folder from one of the new WVD session hosts
+$VMsToManage = (Get-ADComputer -Filter * -Server $PDC -SearchBase $WVDComputersOU.DistinguishedName -SearchScope Subtree).name
+$WVDSH1PolicyDefinitionsUNC = "\\" + $VMsToManage[0] + "\C$\Windows\PolicyDefinitions"
+Copy-Item -Path $WVDSH1PolicyDefinitionsUNC -Destination "\\$FQDomain\SYSVOL\$FQDomain\Policies" -Recurse -Force
+
+# Now that GPO Central Store exists, copy in the FSLogix Group Policy template files
+$PolicyDefinitions = "\\$FQDomain\SYSVOL\$FQDomain\Policies\PolicyDefinitions"
 If (Test-Path $FSLogixSW){
 Copy-Item $FSLogixSW\fslogix.admx $PolicyDefinitions -Force
 Copy-Item $FSLogixSW\fslogix.adml "$PolicyDefinitions\en-US" -Force
 }
 
 # Acquire Virtual Desktop Optimization Tool software
-$VDOTURI = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/master.zip'
-$VDOTZip = "$CTempPath\FSLogixSW\x64\Release\VDOT.zip"
+$VDOTURI = 'https://github.com/The-Virtual-Desktop-Team/Virtual-Desktop-Optimization-Tool/archive/refs/heads/main.zip'
+$VDOTZip = "$CTempPath\Software\VDOT.zip"
 Invoke-WebRequest -Uri $VDOTURI -OutFile $VDOTZip
-Expand-Archive -Path $VDOTZip -DestinationPath "$FSLogixFileShare"
 
-New-GPLink -Target $WVDComputersOU.DistinguishedName -Name $WVDPolicy.DisplayName -LinkEnabled Yes
-
-$PolicyStartupFolder = "\\$FQDomain\SYSVOL\$FQDomain\Policies\$PolicyID\Machine\Scripts\Startup"
-New-Item -ItemType Directory -Path $PolicyStartupFolder
-Copy-Item "$CTempPath\InstallFSLogixClient.ps1" -Destination $PolicyStartupFolder -Force -ErrorAction SilentlyContinue
-
-# $CurrentResourceGroupName = ($DeploymentPrefix +, '-sharedsvcs-rg')
+# Determine profile share name and set a variable
 $DeploymentPrefixSS = ($DeploymentPrefix +,'sharedsvcs*')
 $CurrentStorageAccountName = Get-AzStorageAccount -ResourceGroup $ResourceGroupName | Where-Object {($_.StorageAccountName -Like "$DeploymentPrefix*" -and $_.StorageAccountName -notlike "$DeploymentPrefixSS")}
 $StorageFQDN = "$($CurrentStorageAccountName.StorageAccountName).file.core.windows.net"
 $StorageShareName = Get-AzRmStorageShare -StorageAccount $CurrentStorageAccountName
 $StorageUNC = "\\$StorageFQDN\$($StorageShareName.Name)"
 
-# Import FSLogix GP settings from an export, and set TimeZoneRedirection GP setting
+# Import WVD GP startup settings from an export and apply that to the WVD GPO
 $Pattern = "\{[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}\}"
 Get-ChildItem -Path $CTempPath | Where-Object {$_.Name -match $Pattern}
 $GPOBackupGuid = (Get-ChildItem -Path $CTempPath | Where-Object { $_.Name -match $Pattern }).Name -replace "{" -replace "}"
 Import-GPO -BackupId $GPOBackupGuid -Path $CTempPath -TargetName $WVDPolicy.DisplayName
-Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\Software\FSLogix\Profiles" -Type STRING -ValueName "VHDLocations" -Value $StorageUNC
 
-# RDP Redirection settings
+# Now that the WVD Startup folder is created, copy the WVD SH Startup script to the Scripts Startup folder
+$PolicyStartupFolder = "\\$FQDomain\SYSVOL\$FQDomain\Policies\$PolicyID\Machine\Scripts\Startup"
+Copy-Item "$CTempPath\PostInstallConfigureWVDSessionHosts.ps1" -Destination $PolicyStartupFolder -Force -ErrorAction SilentlyContinue
+
+# Now apply the rest of the WVD group policy settings
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "VHDLocations" -Value $StorageUNC
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "Enabled" -Value 1
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "DeleteLocalProfileWhenVHDShouldApply" -Value 1
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "FlipFlopProfileDirectoryName" -Value 1
 Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fEnableTimeZoneRedirection" -Value 1
-
-# Get credentials and use those to move WVD session hosts to their own OU
-$KeyVault = Get-AzKeyVault -VaultName "*-sharedsvcs-kv"
-$DAUserUPN = (Get-AzADGroup -DisplayName "AAD DC Administrators" | Get-AzADGroupMember).UserPrincipalName
-$DAUserName = $DAUserUPN.Split('@')[0]
-$DAPass = (Get-AzKeyVaultSecret -VaultName $keyvault.VaultName -name $DAUserName).SecretValue
-$DACredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $DAUserUPN, $DAPass
-$WVDComputersOU = Get-ADOrganizationalUnit -Filter 'Name -like "WVD*"' -Server $PDC
-$WVDComputersToMove = Get-ADComputer -Filter * -Server $PDC| Where-Object {($_.DNSHostName -like "$DeploymentPrefix*" -and $_.DNSHostName -notlike "*mgmtvm*")}
-Foreach ($W in $WVDComputersToMove) {Move-ADObject -Credential $DACredential -Identity $W.DistinguishedName -TargetPath $WVDComputersOU.DistinguishedName -Server $PDC}
 
 #Force a GPUpdate now, then reboot so they can take effect, and so the Startup script can run to install FSLogix
 Foreach ($V in $VMsToManage) {Invoke-Command -Computer $V -ScriptBlock {gpupdate /force}}

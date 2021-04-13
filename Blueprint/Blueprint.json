@@ -20,7 +20,7 @@
         },
         "defaultValue": 10
       },
-      "wvdHostpool_vmNumberOfInstances": {
+      "wvdHostPool_vmNumberOfInstances": {
         "type": "int",
         "metadata": {
           "displayName": "Total WVD users to create.",
@@ -28,7 +28,7 @@
         },
         "defaultValue": 2
       },
-      "wvdHostpool_vmSize": {
+      "wvdHostPool_vmSize": {
         "type": "string",
         "metadata": {
           "displayName": "Azure VM size of the session host(s).",
@@ -36,7 +36,7 @@
         },
         "defaultValue": "Standard_D4s_v3"
       },
-      "wvdHostpool_loadBalancerType": {
+      "wvdHostPool_loadBalancerType": {
         "type": "string",
         "metadata": {
           "displayName": "The host pool session balancing method.",
@@ -49,7 +49,7 @@
           ],
           "defaultValue": "BreadthFirst"
       },
-      "wvdHostpool_maxSessionLimit": {
+      "wvdHostPool_maxSessionLimit": {
         "type": "int",
         "metadata": {
           "displayName": "User session limit per session host, in the host pool",
@@ -197,28 +197,28 @@
         },
         "defaultValue": "[concat( 'domainadmin@', parameters('adds_domainName'))]"
       },
-      "wvdHostpool_hostpoolname": {
+      "wvdHostPool_hostpoolname": {
         "type": "string",
         "metadata": {
           "displayName": "WVD Hostpool Name"
         },
         "defaultValue": "[concat(parameters('resourcePrefix'), '-wvd-hp')]"
       },
-      "wvdHostpool_workspaceName": {
+      "wvdHostPool_workspaceName": {
         "type": "string",
         "metadata": {
           "displayName": "WVD Workspace Name"
         },
         "defaultValue": "[concat(parameters('resourcePrefix'), '-wvd-ws')]"
       },
-      "wvdHostpool_hostpoolDescription": {
+      "wvdHostPool_hostpoolDescription": {
         "type": "string",
         "metadata": {
           "displayName": "Hostpool Description"
         },
         "defaultValue": ""
       },
-      "wvdHostpool_vmNamePrefix": {
+      "wvdHostPool_vmNamePrefix": {
         "type": "string",
         "metadata": {
           "displayName": "VM Prefix",
@@ -226,49 +226,55 @@
         },
         "defaultValue": "[concat(parameters('resourcePrefix'), 'VM')]"
       },
-      "wvdHostpool_vmGalleryImageOffer": {
+      "wvdHostPool_vmGalleryImageOffer": {
         "type": "string",
         "metadata": {
           "displayName": "Gallery Image Offer"
         },
         "defaultValue": "office-365"
       },
-      "wvdHostpool_vmGalleryImagePublisher": {
+      "wvdHostPool_vmGalleryImagePublisher": {
         "type": "string",
         "metadata": {
           "displayName": "Gallery Image Publisher"
         },
         "defaultValue": "MicrosoftWindowsDesktop"
       },
-      "wvdHostpool_vmGalleryImageSKU": {
+      "wvdHostPool_vmGalleryImageSKU": {
         "type": "string",
+        "allowedValues": [
+          "20h1-evd-o365pp",
+          "20h1-evd-o365pp-g2",
+          "20h2-evd-o365pp",
+          "20h2-evd-o365pp-g2"
+      ],
         "metadata": {
           "displayName": "Gallery Image SKU"
         },
         "defaultValue": "20h1-evd-o365pp"
       },
-      "wvdHostpool_vmImageType": {
+      "wvdHostPool_vmImageType": {
         "type": "string",
         "metadata": {
           "displayName": "VM Image Type"
         },
         "defaultValue": "Gallery"
       },
-      "wvdHostpool_vmDiskType": {
+      "wvdHostPool_vmDiskType": {
         "type": "string",
         "metadata": {
           "displayName": "VM Image Type"
         },
         "defaultValue": "StandardSSD_LRS"
       },
-      "wvdHostpool_vmUseManagedDisks": {
+      "wvdHostPool_vmUseManagedDisks": {
         "type": "bool",
         "metadata": {
           "displayName": "Use Managed Disks"
         },
         "defaultValue": true
       },
-      "wvdHostpool_allApplicationGroupReferences": {
+      "wvdHostPool_allApplicationGroupReferences": {
         "type": "string",
         "metadata": {
           "displayName": "allApplicationGroupReferences (WVDHostpool)",
@@ -277,7 +283,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_vmImageVhdUri": {
+      "wvdHostPool_vmImageVhdUri": {
         "type": "string",
         "metadata": {
           "displayName": "vmImageVhdUri (WVDHostpool)",
@@ -286,7 +292,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_vmCustomImageSourceId": {
+      "wvdHostPool_vmCustomImageSourceId": {
         "type": "string",
         "metadata": {
           "displayName": "vmCustomImageSourceId (WVDHostpool)",
@@ -295,7 +301,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_networkSecurityGroupId": {
+      "wvdHostPool_networkSecurityGroupId": {
         "type": "string",
         "metadata": {
           "displayName": "networkSecurityGroupId (WVDHostpool)",
@@ -304,7 +310,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_personalDesktopAssignmentType": {
+      "wvdHostPool_personalDesktopAssignmentType": {
         "type": "string",
         "metadata": {
           "displayName": "personalDesktopAssignmentType (WVDHostpool)",
@@ -313,7 +319,7 @@
         "defaultValue": "",
         "allowedValues": ["Automatic", "Direct", ""]
       },
-      "wvdHostpool_customRdpProperty": {
+      "wvdHostPool_customRdpProperty": {
         "type": "string",
         "metadata": {
           "displayName": "customRdpProperty (WVDHostpool)",
@@ -322,7 +328,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_deploymentId": {
+      "wvdHostPool_deploymentId": {
         "type": "string",
         "metadata": {
           "displayName": "deploymentId (WVDHostpool)",
@@ -331,7 +337,7 @@
         "defaultValue": "",
         "allowedValues": []
       },
-      "wvdHostpool_ouPath": {
+      "wvdHostPool_ouPath": {
         "type": "string",
         "metadata": {
           "displayName": "ouPath (WVDHostpool)",

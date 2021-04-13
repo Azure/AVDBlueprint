@@ -163,7 +163,7 @@
           "value": "[parameters('adds_domainName')]"
         },
         "hostpoolName": {
-          "value": "[parameters('wvdHostpool_hostpoolName')]"
+          "value": "[parameters('wvdHostPool_hostpoolName')]"
         },
         "userPrefix": {
           "value": "[parameters('wvdUsers_userPrefix')]"

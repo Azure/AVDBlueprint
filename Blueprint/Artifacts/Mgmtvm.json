@@ -33,7 +33,7 @@
         "type": "string",
         "defaultValue": "[utcNow('u')]"
       },
-      "CreateFileShareScriptURI": {
+      "CreateConfigureFileShareAndGPScriptURI": {
         "type": "string"
       },
       "mgmtvmNameStatic": {
@@ -413,9 +413,9 @@
           "autoUpgradeMinorVersion": true,
           "settings": {
             "fileUris": [
-              "[parameters('CreateFileShareScriptURI')]"
+              "[parameters('CreateConfigureFileShareAndGPScriptURI')]"
             ],
-            "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File Create-AzAADDSJoinedFileshare.ps1 -ResourceGroupName ', resourceGroup().name ,' -StorageAccountName ',toLower(substring(concat(parameters('resourcePrefix'),uniqueString(subscription().id)), 0, 14)),' -Verbose')]"
+            "commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -File CreateAADDSFileShare_ConfigureGP.ps1 -ResourceGroupName ', resourceGroup().name ,' -StorageAccountName ',toLower(substring(concat(parameters('resourcePrefix'),uniqueString(subscription().id)), 0, 14)),' -Verbose')]"
           }
         }
       },
@@ -563,8 +563,8 @@
     "createNetworkSecurityGroup": {
       "value": false
     },
-    "CreateFileShareScriptURI": {
-      "value": "[concat(parameters('_ScriptURI'),'/Create-AzAADDSJoinedFileshare.ps1')]"
+    "CreateConfigureFileShareAndGPScriptURI": {
+      "value": "[concat(parameters('_ScriptURI'),'/CreateAADDSFileShare_ConfigureGP.ps1')]"
     },
     "vmSize": {
       "value": "Standard_D2s_v3"

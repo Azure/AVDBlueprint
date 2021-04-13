@@ -138,24 +138,24 @@ These optional parameters either have default values or, by default, do not have
 |**vnet_logs-retention-in-days**|365|Number of days vnet logs will be retained.|
 |**keyvault_logs-retention-in-days**|365|Number of days keyvault logs will be retained.|
 |**daUser_AdminUser**|domainadmin@{adds_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
-|**wvdHostpool_hostpoolname**|{resourcePrefix}-wvd-hp||
-|**wvdHostpool_workspaceName**|{resourcePrefix}-wvd-ws||
-|**wvdHostpool_hostpoolDescription**|||
-|**wvdHostpool_vmNamePrefix**|{resourcePrefix}vm|Prefix added to each WVD session host name.|
-|**wvdHostpool_vmGalleryImageOffer**|office-365||
-|**wvdHostpool_vmGalleryImagePublisher**|MicrosoftWindowsDesktop||
-|**wvdHostpool_vmGalleryImageSKU**|20h1-evd-o365pp||
-|**wvdHostpool_vmImageType**|Gallery||
-|**wvdHostpool_vmDiskType**|StandardSSD_LRS||
-|**wvdHostpool_vmUseManagedDisks**|true||
-|**wvdHostpool_allApplicationGroupReferences**|||
-|**wvdHostpool_vmImageVhdUri**||(Required when vmImageType = CustomVHD) URI of the sysprepped image vhd file to be used to create the session host VMs.|
-|**wvdHostpool_vmCustomImageSourceId**||(Required when vmImageType = CustomImage) Resource ID of the image.|
-|**wvdHostpool_networkSecurityGroupId**||The resource id of an existing network security group.|
-|**wvdHostpool_personalDesktopAssignmentType**|||
-|**wvdHostpool_customRdpProperty**||Hostpool rdp properties.|
-|**wvdHostpool_deploymentId**|||
-|**wvdHostpool_ouPath**|||
+|**wvdHostPool_hostpoolname**|{resourcePrefix}-wvd-hp||
+|**wvdHostPool_workspaceName**|{resourcePrefix}-wvd-ws||
+|**wvdHostPool_hostpoolDescription**|||
+|**wvdHostPool_vmNamePrefix**|{resourcePrefix}vm|Prefix added to each WVD session host name.|
+|**wvdHostPool_vmGalleryImageOffer**|office-365||
+|**wvdHostPool_vmGalleryImagePublisher**|MicrosoftWindowsDesktop||
+|**wvdHostPool_vmGalleryImageSKU**|20h1-evd-o365pp||
+|**wvdHostPool_vmImageType**|Gallery||
+|**wvdHostPool_vmDiskType**|StandardSSD_LRS||
+|**wvdHostPool_vmUseManagedDisks**|true||
+|**wvdHostPool_allApplicationGroupReferences**|||
+|**wvdHostPool_vmImageVhdUri**||(Required when vmImageType = CustomVHD) URI of the sysprepped image vhd file to be used to create the session host VMs.|
+|**wvdHostPool_vmCustomImageSourceId**||(Required when vmImageType = CustomImage) Resource ID of the image.|
+|**wvdHostPool_networkSecurityGroupId**||The resource id of an existing network security group.|
+|**wvdHostPool_personalDesktopAssignmentType**|||
+|**wvdHostPool_customRdpProperty**||Hostpool rdp properties.|
+|**wvdHostPool_deploymentId**|||
+|**wvdHostPool_ouPath**|||
 |**wvdUsers_userPrefix**|user|Username prefix. A number will be added to the end of this value.|
 |**wvdUsers_userCount**|10|Total Number of WVD users to create.|
 
@@ -281,12 +281,12 @@ sections of Group Policy settings applied to the WVD session hosts:
     - **"RDP session host lockdown" settings**  
 
 The FSLogix are there to enable the FSLogix profile management solution.  During Blueprint deployment, some of the parameters are evaluated and used to create a variable for the FSLogix profile share UNC, as it exits in this particular deployment.  That value is then written to a new GPO that is created just prior to the share UNC enumeration, and is only applied to an OU object, also created prior to the share UNC enumeration.  
-With respect to the **"RDP session host lockdown"** settings, those are set by default, based on various security recommendations, made by Microsoft and others. The **"RDP session host lockdown** settings are all set in a script file called **'Create-AzAADDSJoinedFileshare.ps1'**.  There is one setting that is not available in that file, which is a Group Policy start script entry, for a script that is downloaded and run by each WVD session host, on their next Startup ***after they have received and applied their new group policy***.  Here is the workflow of the chain of events that lead up to the session hosts becoming fully functional.
+With respect to the **"RDP session host lockdown"** settings, those are set by default, based on various security recommendations, made by Microsoft and others. The **"RDP session host lockdown** settings are all set in a script file called **'CreateAADDSFileShare_ConfigureGP.ps1'**.  There is one setting that is not available in that file, which is a Group Policy start script entry, for a script that is downloaded and run by each WVD session host, on their next Startup ***after they have received and applied their new group policy***.  Here is the workflow of the chain of events that lead up to the session hosts becoming fully functional.
 
 1. WVD Session Hosts are created, and joined to the AAD DS domain.  This happens in the artifact **"WVDDeploy.json"**.
 2. Later the "management VM" is created, and joined to the domain.  This domain join triggers a reboot, and the JoinDomain extension waits for the machine to reboot and check in before the "MGMTVM" artifact continues.
 3. After the management VM reboots, the next section of "MGMTVM" artifact initiates running a custom script, which is downloaded from Azure storage, to the management VM.
-4. The Managment VM runs the 'Create-AzAADDSJoinedFileshare.ps1' script, which has two sections: 1) Create storage for FSLogix, 2) Run the domain management code
+4. The Managment VM runs the 'CreateAADDSFileShare_ConfigureGP.ps1' script, which has two sections: 1) Create storage for FSLogix, 2) Run the domain management code
 5. The domain management code does the following for the session hosts:
     1. Creates a new GPO called **"WVD Session Host policy"**        
     2. Creates a new OU called **"WVD Computers"**
@@ -296,7 +296,7 @@ With respect to the **"RDP session host lockdown"** settings, those are set by d
     6. Invokes a command to each VM in the WVD OU, to immediately refresh Group Policy
     7. Invokes a command to each VM in the WVD OU, to reboot with a 5 second delay, so that the VMs can run the FSLogix startup script, which installs the FSLogix software.
         
-Now for the tip.  If there is a particular setting that you do not want to apply, you could download a copy of the script **'Create-AzAADDSJoinedFileshare.ps1'**.  Then you can customize the script file by editing out the line that applies a particular group policy setting that you may not want to apply to the WVD sessions host.  An example will be listed just below.  
+Now for the tip.  If there is a particular setting that you do not want to apply, you could download a copy of the script **'CreateAADDSFileShare_ConfigureGP.ps1'**.  Then you can customize the script file by editing out the line that applies a particular group policy setting that you may not want to apply to the WVD sessions host.  An example will be listed just below.  
 So that the WVD session hosts can be customized to your environment, you would then create an Azure storage container, set to anonymous access, then upload your script to that location.  
 Lastly, you would edit the Blueprint artifact file "MGMTVM", currently line 413.  But that section looks like this:
 
@@ -307,14 +307,14 @@ Lastly, you would edit the Blueprint artifact file "MGMTVM", currently line 413.
           "autoUpgradeMinorVersion": true,
           "settings": {
             "fileUris": [
-                "https://agblueprintsa.blob.core.windows.net/blueprintscripts/Create-AzAADDSJoinedFileshare.ps1"  
+                "[parameters('CreateConfigureFileShareAndGPScriptURI')]"  
 
-You would edit the value inside the quotes, to point to your specific storage location.  For example, you might change yours to something like this:
+You would edit the parameter value inside the quotes, to point to your specific storage location.  For example, you might change yours to something like this:
 
             "fileUris": [
-                "https://contosoblueprintsa.blob.core.windows.net/blueprintscripts/Create-AzAADDSJoinedFileshare.ps1"
+                "https://contosoblueprintsa.blob.core.windows.net/blueprintscripts/CreateAADDSFileShare_ConfigureGP.ps1.ps1"
 
-Lastly, you would edit the script **'Create-AzAADDSJoinedFileshare.ps1'** to remove the setting you are interested in.  Here are the settings details:  
+Lastly, you would edit the script **'CreateAADDSFileShare_ConfigureGP.ps1'** to remove the setting you are interested in.  Here are the settings details:  
 
 ### RDP Redirection Settings  
 
