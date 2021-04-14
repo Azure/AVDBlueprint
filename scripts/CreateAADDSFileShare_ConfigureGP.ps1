@@ -128,43 +128,39 @@ Get-Date | Out-File -append $ScriptLogActionsTimes
 # Download WVD post-install group policy settings zip file, and expand it
 $WVDPostInstallGPSettingsZip = "$CTempPath\WVD_PostInstall_GP_Settings.zip"
 Invoke-WebRequest -Uri 'https://agblueprintsa.blob.core.windows.net/blueprintscripts/WVD_PostInstall_GP_Settings.zip' -OutFile $WVDPostInstallGPSettingsZip
-If (Test-Path $FSLogixGPSettingsZip){
+If (Test-Path $WVDPostInstallGPSettingsZip){
 Expand-Archive -LiteralPath $WVDPostInstallGPSettingsZip -DestinationPath $CTempPath -ErrorAction SilentlyContinue
 }
 
 # Create a startup script for the session hosts, to run the Virtual Desktop Optimization Tool
 $WVDSHSWShare = "$" + "SoftwareShare" + " = " + "'\\$ENV:ComputerName\Software'"
-$WVDSHSWShare | Out-File -FilePath $CTempPath\PostInstallConfigureWVDSessionHosts.ps1
+$WVDSHSWShare | Out-File -FilePath "$CTempPath\PostInstallConfigureWVDSessionHosts.ps1"
 $PostInstallWVDConfig = @'
 $CTempPath = 'C:\Temp'
 $VDOTZIP = "$CTempPath\VDOT.zip"
 
-If (Test-Path "$SoftwareShare\VDOT.zip"){
- New-Item -ItemType Directory -Path $CTempPath -ErrorAction SilentlyContinue
- Copy-Item "$SoftwareShare\VDOT.zip" $CTempPath
+#Test if VDOT has run before and if it has not, run it
+If(-not(Test-Path "$CTempPath\Virtual-Desktop-Optimization-Tool-main\*.csv")){
+    Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Force
+    New-Item -ItemType Directory -Path $CTempPath -ErrorAction SilentlyContinue
+    Copy-Item "$SoftwareShare\VDOT.zip" $CTempPath
+    Expand-Archive -Path $VDOTZIP -DestinationPath $CTempPath
+    Get-ChildItem -Path C:\Temp\Virtual* -Recurse -Force | Unblock-File
+    $VDOTString = 'C:\Temp\Virtual-Desktop-Optimization-Tool-main\Win10_VirtualDesktop_Optimize.ps1 -Optimizations All -Verbose'
+    Invoke-Expression $VDOTString
+    
+    $PSExecutionPolicy = Get-ExecutionPolicy
+    If ($PSExecutionPolicy -ne "Restricted"){
+    Set-ExecutionPolicy -ExecutionPolicy Restricted -Force
+    }
+        
+    Invoke-Command -ScriptBlock {Shutdown -r -f -t 00}
 }
-
-If (Test-Path $VDOTZIP){
- Expand-Archive -Path $VDOTZIP -DestinationPath $CTempPath
-}
-
-If (Test-Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1"){
- $VDOTString = 'C:\Temp\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1 -Optimizations All -WindowsVersion .\2009 -Verbose'
- Invoke-Expression $VDOTString
-}
-
-# Rename the VDOT PowerShell script so that it doesn't run on every startup
-If (Test-Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1"){
- Rename-Item -Path "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1" -NewName "$CTempPath\Virtual-Desktop-Optimization-Tool-master\Win10_VirtualDesktop_Optimize.ps1.old"
-}
-
-Set-ExecutionPolicy -ExecutionPolicy Restricted -Force
-Shutdown -r -f -t 00
 '@
 Add-Content -Path $CTempPath\PostInstallConfigureWVDSessionHosts.ps1 -Value $PostInstallWVDConfig
 
 # Acquire FSLogix software for the group policy files only
-# since the FSLogix session host software is now included inbox
+# since the FSLogix session host software is now included in OS
 $FSLogixZip = 'C:\Temp\FSLogixSW.zip'
 $FSLogixSW = 'C:\Temp\Software\FSLogix'
 $SoftwareShare = "$CTempPath\Software"
@@ -229,9 +225,9 @@ Copy-Item "$CTempPath\PostInstallConfigureWVDSessionHosts.ps1" -Destination $Pol
 
 # Now apply the rest of the WVD group policy settings
 Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "VHDLocations" -Value $StorageUNC
-Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "Enabled" -Value 1
-Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "DeleteLocalProfileWhenVHDShouldApply" -Value 1
-Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type STRING -ValueName "FlipFlopProfileDirectoryName" -Value 1
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type DWORD -ValueName "Enabled" -Value 1
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type DWORD -ValueName "DeleteLocalProfileWhenVHDShouldApply" -Value 1
+Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\FSLogix\Profiles" -Type DWORD -ValueName "FlipFlopProfileDirectoryName" -Value 1
 Set-GPRegistryValue -Name "WVD Session Host Policy" -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Type DWORD -ValueName "fEnableTimeZoneRedirection" -Value 1
 
 #Force a GPUpdate now, then reboot so they can take effect, and so the Startup script can run to install FSLogix

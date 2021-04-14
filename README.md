@@ -278,17 +278,17 @@ help .\Remove-AzWvdBpDeployment.ps1
 sections of Group Policy settings applied to the WVD session hosts:  
 
     - **FSLogix settings**
-    - **"RDP session host lockdown" settings**  
+    - **"RDP session host redirection" settings**  
 
-The FSLogix are there to enable the FSLogix profile management solution.  During Blueprint deployment, some of the parameters are evaluated and used to create a variable for the FSLogix profile share UNC, as it exits in this particular deployment.  That value is then written to a new GPO that is created just prior to the share UNC enumeration, and is only applied to an OU object, also created prior to the share UNC enumeration.  
-With respect to the **"RDP session host lockdown"** settings, those are set by default, based on various security recommendations, made by Microsoft and others. The **"RDP session host lockdown** settings are all set in a script file called **'CreateAADDSFileShare_ConfigureGP.ps1'**.  There is one setting that is not available in that file, which is a Group Policy start script entry, for a script that is downloaded and run by each WVD session host, on their next Startup ***after they have received and applied their new group policy***.  Here is the workflow of the chain of events that lead up to the session hosts becoming fully functional.
+The FSLogix settings are there to enable the FSLogix profile management solution.  During Blueprint deployment, some of the parameters are evaluated and used to create a variable for the FSLogix profile share UNC, as it exits in this particular deployment.  That value is then written to a new GPO that is created just prior to the share UNC enumeration, and is only applied to an OU object, also created prior to the share UNC enumeration.  
+With respect to the **"RDP session host redirection"** settings, the only setting currently utilized is the setting to pass current time zone into your WVD session. The **"RDP session host redirection** settings are all set in a script file called **'CreateAADDSFileShare_ConfigureGP.ps1'**.
 
 1. WVD Session Hosts are created, and joined to the AAD DS domain.  This happens in the artifact **"WVDDeploy.json"**.
-2. Later the "management VM" is created, and joined to the domain.  This domain join triggers a reboot, and the JoinDomain extension waits for the machine to reboot and check in before the "MGMTVM" artifact continues.
+2. Later in the blueprint assignment, the "management VM" is created and joined to the domain.  This domain join triggers a reboot, and the JoinDomain extension waits for the machine to reboot and check in before the "MGMTVM" artifact continues.
 3. After the management VM reboots, the next section of "MGMTVM" artifact initiates running a custom script, which is downloaded from Azure storage, to the management VM.
-4. The Managment VM runs the 'CreateAADDSFileShare_ConfigureGP.ps1' script, which has two sections: 1) Create storage for FSLogix, 2) Run the domain management code
-5. The domain management code does the following for the session hosts:
-    1. Creates a new GPO called **"WVD Session Host policy"**        
+4. The Management VM runs the **'CreateAADDSFileShare_ConfigureGP.ps1'** script, which has two sections: 1) Create storage for FSLogix profile containers, 2) Run the domain group policy settings specific to the WVD session hosts.
+5. The domain management code does the following for the WVD session hosts:
+    1. Creates a new GPO called **"WVD Session Host policy"**
     2. Creates a new OU called **"WVD Computers"**
     3. Links the WVD GPO to the WVD OU
     4. Restores a previous GP export, which imports a Startup script, and also copies that Startup script to the current location in SYSVOl policies
