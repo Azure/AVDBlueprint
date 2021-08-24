@@ -72,6 +72,16 @@ Check the current provider registration status in your subscription:
     Register-AzResourceProvider -ProviderNamespace Microsoft.AAD
     ```
 
+1. **Azure Active Directory Domain Services Enterprise application registered to your subscription**
+
+    Documentation: [Create an Azure Active Directory Domain Services managed domain using an Azure Resource Manager template](https://docs.microsoft.com/en-us/azure/active-directory-domain-services/template-create-instance)
+
+    Run the following PowerShell command:
+
+    ```powershell
+    New-AzureADServicePrincipal -AppId "6ba9a5d4-8456-4118-b521-9c5ca10cdf84"
+    ```
+
 1. **[Domain Controller Services service principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)** (if it does not already exist), with this PowerShell command
 
     ```powershell
@@ -141,7 +151,7 @@ These optional parameters either have default values or, by default, do not have
 |**vnet_adds-subnet-address-prefix**|10.0.6.0/24|Subnet for Azure ADDS.|
 |**vnet_logs-retention-in-days**|365|Number of days vnet logs will be retained.|
 |**keyvault_logs-retention-in-days**|365|Number of days keyvault logs will be retained.|
-|**daUser_AdminUser**|domainadmin@{adds_domainName}|This account will be a member of AAD DC Administrators and Local Admin on deployed VMs.|
+|**daUser_AdminUser**|domainadmin@{adds_domainName}|This account will be a member of AAD DC Administrators and local admin on deployed VMs.|
 |**avdHostpool_hostpoolname**|{resourcePrefix}-avd-hp||
 |**avdHostpool_workspaceName**|{resourcePrefix}-avd-ws||
 |**avdHostpool_hostpoolDescription**|||

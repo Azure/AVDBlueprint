@@ -193,7 +193,7 @@
         "type": "string",
         "metadata": {
           "displayName": "Admin User UPN",
-          "description": "This account will be a member of AAD DC Administrators and Local Admin on deployed VMs."
+          "description": "This account will be a member of AAD DC Administrators and local admin on deployed VMs."
         },
         "defaultValue": "[concat( 'domainadmin@', parameters('adds_domainName'))]"
       },
