@@ -160,9 +160,11 @@ if (-not($BlueprintResourcePrefix)) {
 
     Write-Host "Checking PowerShell installed modules..." -ForegroundColor Cyan
 
-    $AzModuleGalleryMessage = "You may be prompted to install from the PowerShell Gallery`n
-    If the Az PowerShell modules were not previously installed you may be prompted to install 'Nuget'.`n
-    If your policies allow those items to be installed, click 'Yes to All' when prompted."
+    $AzModuleGalleryMessage = @"
+    You may be prompted to install from the PowerShell Gallery
+    If the Az PowerShell modules were not previously installed you may be prompted to install `'Nuget`'
+    If your policies allow those items to be installed, click `'Yes to All`' when prompted.
+"@
             
     if (-not(Get-PSRepository -Name 'PSGallery')) {
     Write-Host "    PowerShell Gallery 'PSGallery' not available.  Now resetting local repository to default,`n
@@ -171,102 +173,119 @@ if (-not($BlueprintResourcePrefix)) {
     Register-PSRepository -Default
     }
     
-    Import-Module -Name Az.ManagedServiceIdentity -ErrorAction SilentlyContinue
-    if (-not(Get-Module Az.ManagedServiceIdentity)) {
-    Write-Host "PowerShell module 'Az.ManagedServiceIdentity' not found. Now installing..." -ForegroundColor Cyan
-    Write-Host $AzModuleGalleryMessage -ForegroundColor Cyan
-    Install-Module Az.ManagedServiceIdentity
+    $RequiredModules = @('Az.ManagedServiceIdentity', 'Az.Resources', 'Az.Blueprint', 'AzureAD')
+    $InstalledModules = Get-Module -ListAvailable | Select-Object -ExpandProperty Name
+
+    Write-Host "$AzModuleGalleryMessage `n" -ForegroundColor Cyan
+    $RequiredModules | ForEach-Object {
+        Write-Host "Checking for $_ : " -NoNewline
+        If ($InstalledModules -notcontains $_)
+        {
+            Write-Host "Missing! Installing..." -ForegroundColor Red
+            Install-Module $_ -Scope CurrentUser
+        }
+        Else
+        {
+            Write-Host "Installed" -ForegroundColor Green
+        }
+        Import-Module $_
     }
 
-    Import-Module -Name Az.Resources -ErrorAction SilentlyContinue
-    if (-not(Get-Module Az.Resources)) {
-    Write-Host "PowerShell module 'Az.Resources' not found. Now installing..." -ForegroundColor Cyan
-    Write-Host $AzModuleGalleryMessage -ForegroundColor Cyan
-    Install-Module Az.Resources
-    }
+#endregion
+#region Menu function
+Function Get-MenuSelection
+{
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter()]
+        [String]
+        $LableText = 'Please select an Azure Location:',
+        [Parameter()]
+        [Array]
+        $MenuItems,
+        [Parameter()]
+        [String]
+        $FormText = 'Please select an Azure Location:'
 
-    Import-Module -Name Az.Blueprint -ErrorAction SilentlyContinue
-    if (-not(Get-Module Az.Blueprint)) {
-    Write-Host "PowerShell module 'Az.Blueprint' not found. Now installing..." -ForegroundColor Cyan
-    Write-Host $AzModuleGalleryMessage -ForegroundColor Cyan
-    Install-Module Az.Blueprint
+    )
+    Begin { }
+    Process
+    {
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        $form = New-Object System.Windows.Forms.Form
+        $form.Text = $FormText
+        $form.Size = New-Object System.Drawing.Size(300, 200)
+        $form.StartPosition = 'CenterScreen'
+        $okButton = New-Object System.Windows.Forms.Button
+        $okButton.Location = New-Object System.Drawing.Point(75, 120)
+        $okButton.Size = New-Object System.Drawing.Size(75, 23)
+        $okButton.Text = 'OK'
+        $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        $form.AcceptButton = $okButton
+        $form.Controls.Add($okButton)
+        $cancelButton = New-Object System.Windows.Forms.Button
+        $cancelButton.Location = New-Object System.Drawing.Point(150, 120)
+        $cancelButton.Size = New-Object System.Drawing.Size(75, 23)
+        $cancelButton.Text = 'Cancel'
+        $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+        $form.CancelButton = $cancelButton
+        $form.Controls.Add($cancelButton)
+        $label = New-Object System.Windows.Forms.Label
+        $label.Location = New-Object System.Drawing.Point(10, 20)
+        $label.Size = New-Object System.Drawing.Size(280, 20)
+        $label.Text = $LableText
+        $form.Controls.Add($label)
+        $listBox = New-Object System.Windows.Forms.ListBox
+        $listBox.Location = New-Object System.Drawing.Point(10, 40)
+        $listBox.Size = New-Object System.Drawing.Size(260, 20)
+        $listBox.Height = 80
+        ForEach ($A in $MenuItems)
+        {
+            Write-Output $A | ForEach-Object { [void] $listBox.Items.Add($_) }
+        }
+        $form.Controls.Add($listBox)
+        $form.Topmost = $true
+        $result = $form.ShowDialog()
     }
+    End
+    {
+        if ($result -eq [System.Windows.Forms.DialogResult]::CANCEL)
+        {
+            
+            Return 'Cancel'
+        }
+        Else
+        {
+            Return $listBox.SelectedItem
+        }
+    }
+}
 
-    Import-Module -Name AzureAD -ErrorAction SilentlyContinue
-    if (-not(Get-InstalledModule | Where-Object Name -EQ 'AzureAD')) {
-    Write-Host "PowerShell module 'AzureAD' not found. Now installing..." -ForegroundColor Cyan
-    Write-Host $AzModuleGalleryMessage -ForegroundColor Cyan
-    Install-Module AzureAD -Scope CurrentUser
-    }
 #endregion
 
 #region Pop-up Azure Cloud instance for user selection
-Write-Host "`n    Enumerating list of Azure Clouds..." -ForegroundColor Cyan
-$AzureClouds = Get-AzEnvironment
-$AzureCloudsList = $AzureClouds.Name
-
-# Present a pop-up form to select region to deploy to
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$form = New-Object System.Windows.Forms.Form
-$form.Text = 'Select Azure Cloud'
-$form.Size = New-Object System.Drawing.Size(300,200)
-$form.StartPosition = 'CenterScreen'
-
-$okButton = New-Object System.Windows.Forms.Button
-$okButton.Location = New-Object System.Drawing.Point(75,120)
-$okButton.Size = New-Object System.Drawing.Size(75,23)
-$okButton.Text = 'OK'
-$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-$form.AcceptButton = $okButton
-$form.Controls.Add($okButton)
-
-$cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(150,120)
-$cancelButton.Size = New-Object System.Drawing.Size(75,23)
-$cancelButton.Text = 'Cancel'
-$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-$form.CancelButton = $cancelButton
-$form.Controls.Add($cancelButton)
-
-$label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Point(10,20)
-$label.Size = New-Object System.Drawing.Size(280,20)
-$label.Text = 'Please Select Azure Cloud:'
-$form.Controls.Add($label)
-
-$listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(10,40)
-$listBox.Size = New-Object System.Drawing.Size(260,20)
-$listBox.Height = 80
-
-ForEach ($A in $AzureCloudsList){
-Write-Output $A | ForEach-Object {[void] $listBox.Items.Add($_)}
+Write-Host "`nEnumerating list of Azure Clouds..." -ForegroundColor Cyan
+$AzureEnvironmentName = Get-MenuSelection -MenuItems (Get-AzEnvironment | Select-Object -ExpandProperty Name) -LableText "Select an Azure Region" -FormText "Select Azure Cloud"
+If ($AzureEnvironmentName -eq 'Cancel')
+{
+    Write-Host "The 'Cancel' button was pressed.`nPlease re-run this script and select an Azure cloud in the pop-up pick-list" -ForegroundColor Red
+    Return
+}
+Else
+{
+    
+    If ($null -eq $AzureEnvironmentName)
+    {
+        Write-host "An Azure cloud was not selected`nPlease re-run this script and select an Azure cloud in teh pop-up pick-list" -for Red
+        return
+    }
+    Write-Host "Your chosen Azure Cloud is: " -NoNewline
+    Write-Host $AzureEnvironmentName -ForegroundColor Green
 }
 
-$form.Controls.Add($listBox)
 
-$form.Topmost = $true
-
-$result = $form.ShowDialog()
-
-if ($result -eq [System.Windows.Forms.DialogResult]::CANCEL)
- {
-    Write-Host "The 'Cancel' button was pressed. The script will now exit." -ForegroundColor Red
-    Return
- }
-if ($null -eq $listBox.SelectedItem)
- {
-    Write-Host "    An Azure cloud was not selected.
-    Please re-run this script and select an Azure cloud in the pop-up pick-list" -ForegroundColor Red
-    Return
- }
-if ($result -eq [System.Windows.Forms.DialogResult]::OK)
- {
-    $AzureEnvironmentName = $listBox.SelectedItem
-    Write-Host "Your chosen Azure Cloud is '$AzureEnvironmentName'"
- }
 #endregion
 
 #region Checking for and setting up environment
@@ -280,226 +299,83 @@ $AzureEnvironment = Get-AzContext
 $AzureStorageEnvironment = ($AzureEnvironment).Environment.StorageEndpointSuffix
 $AzureStorageFileEnv = 'file.' + $AzureStorageEnvironment
 
-Write-Host "`n    Enumerating list of locations in your environment, that offer the AVD service..." -ForegroundColor Cyan
-$AzureLocations = (Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.DesktopVirtualization" -and $_.RegistrationState -EQ "Registered")}).Locations.ToLower() -replace '\s',''
-
 # Present a pop-up form to select region to deploy to
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$form = New-Object System.Windows.Forms.Form
-$form.Text = 'Select Azure Location'
-$form.Size = New-Object System.Drawing.Size(300,200)
-$form.StartPosition = 'CenterScreen'
-
-$okButton = New-Object System.Windows.Forms.Button
-$okButton.Location = New-Object System.Drawing.Point(75,120)
-$okButton.Size = New-Object System.Drawing.Size(75,23)
-$okButton.Text = 'OK'
-$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-$form.AcceptButton = $okButton
-$form.Controls.Add($okButton)
-
-$cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(150,120)
-$cancelButton.Size = New-Object System.Drawing.Size(75,23)
-$cancelButton.Text = 'Cancel'
-$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-$form.CancelButton = $cancelButton
-$form.Controls.Add($cancelButton)
-
-$label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Point(10,20)
-$label.Size = New-Object System.Drawing.Size(280,20)
-$label.Text = 'Please select an Azure Location:'
-$form.Controls.Add($label)
-
-$listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(10,40)
-$listBox.Size = New-Object System.Drawing.Size(260,20)
-$listBox.Height = 80
-
-ForEach ($A in $AzureLocations){
-Write-Output $A | ForEach-Object {[void] $listBox.Items.Add($_)}
-}
-
-$form.Controls.Add($listBox)
-
-$form.Topmost = $true
-
-$result = $form.ShowDialog()
-
-if ($result -eq [System.Windows.Forms.DialogResult]::CANCEL)
- {
+Write-Host "`n    Enumerating list of locations in your environment, that offer the AVD service..." -ForegroundColor Cyan
+$AzureLocations = Get-MenuSelection -MenuItems ((Get-AzResourceProvider -ProviderNamespace Microsoft.DesktopVirtualization).Locations.ToLower() -replace '\s', '' | Select-Object -Unique ) -LableText "Please select an Azure Location:" -FormText 'Select Azure Location'
+If ($AzureLocations -eq 'Cancel')
+{
     Write-Host "The 'Cancel' button was pressed. The script will now exit." -ForegroundColor Red
     Return
- }
-if ($null -eq $listBox.SelectedItem)
- {
-    Write-Host "    An Azure Location was not selected.
-    Please re-run this script and select an Azure location in the pop-up pick-list" -ForegroundColor Red
-    Return
- }
-if ($result -eq [System.Windows.Forms.DialogResult]::OK)
- {
-    $ChosenAzureLocation = $listBox.SelectedItem
+}
+Else 
+{
+    If ($null -eq $AzureLocations)
+    {
+        Write-Host "An Azure Location was not selected.`nPlease re-run this script and select an Azure location in the pop-up pick-list" -ForegroundColor Red
+        Return
+    }
+
+    $ChosenAzureLocation = $AzureLocations
     Write-Host "Your chosen Azure location is '$ChosenAzureLocation'"
- }
+}
 
 #region If management VM Sku prompt set true, query and display available Skus
-if ($PromptForManagementVMOSSku){
-Write-Host "`n    Gathering list of available Server Windows Skus..." -ForegroundColor Cyan
-$ServerSkus = Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsServer' -Offer 'WindowsServer'  | Where-Object {$_.Skus -like "20??-?atacenter*" -and $_.Skus -notlike "*core*" -and $_.Skus -notlike "*smalldisk*" -and $_.Skus -notlike "*containers*"} | Select-object -Expandproperty Skus
-
-# Present a pop-up form to select management VM OS Sku to build from
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-
-$form = New-Object System.Windows.Forms.Form
-$form.Text = 'MGMT VM OS Sku'
-$form.Size = New-Object System.Drawing.Size(300,200)
-$form.StartPosition = 'CenterScreen'
-
-$okButton = New-Object System.Windows.Forms.Button
-$okButton.Location = New-Object System.Drawing.Point(75,120)
-$okButton.Size = New-Object System.Drawing.Size(75,23)
-$okButton.Text = 'OK'
-$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-$form.AcceptButton = $okButton
-$form.Controls.Add($okButton)
-
-$cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(150,120)
-$cancelButton.Size = New-Object System.Drawing.Size(75,23)
-$cancelButton.Text = 'Cancel'
-$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-$form.CancelButton = $cancelButton
-$form.Controls.Add($cancelButton)
-
-$label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Point(10,20)
-$label.Size = New-Object System.Drawing.Size(280,20)
-$label.Text = 'Please select MGMT VM OS Sku:'
-$form.Controls.Add($label)
-
-$listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(10,40)
-$listBox.Size = New-Object System.Drawing.Size(260,20)
-$listBox.Height = 80
-
-ForEach ($S in $ServerSkus){
-Write-Output $S | ForEach-Object {[void] $listBox.Items.Add($_)}
-}
-
-$form.Controls.Add($listBox)
-
-$form.Topmost = $true
-
-$result = $form.ShowDialog()
-
-if ($result -eq [System.Windows.Forms.DialogResult]::CANCEL)
- {
-    Write-Host "The 'Cancel' button was pressed. The script will now exit." -ForegroundColor Red
-    Return
- }
-if ($null -eq $listBox.SelectedItem)
- {
-    Write-Host "    A Windows Server OS Sku was not selected.
-    Please re-run this script and select a Windows OS Sku in the pop-up pick-list" -ForegroundColor Red
-    Return
- }
-if ($result -eq [System.Windows.Forms.DialogResult]::OK)
- {
-    $managementVMOSSku = $listBox.SelectedItem
+if ($PromptForManagementVMOSSku)
+{
+    Write-Host "`n    Gathering list of available Server Windows Skus..." -ForegroundColor Cyan
+    $ServerSkus = Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsServer' -Offer 'WindowsServer' | Where-Object { $_.Skus -like "20??-?atacenter*" -and $_.Skus -notlike "*core*" -and $_.Skus -notlike "*smalldisk*" -and $_.Skus -notlike "*containers*" } | Select-object -Expandproperty Skus
+    $managementVMOSSku = Get-MenuSelection -MenuItems $ServerSkus -LableText 'Please select MGMT VM OS Sku:' -FormText 'MGMT VM OS Sku'
+    if ($managementVMOSSku -eq 'Cancel')
+    {
+        $managementVMOSSku = '2022-datacenter'
+        Write-Host "Operation canceled, defaulting to '$managementVMOSSku'"
+    }
+    If ($null -eq $managementVMOSSku)
+    {
+        $managementVMOSSku = '2022-datacenter'
+    }
     Write-Host "Your chosen management VM OS Sku is '$managementVMOSSku'"
- }
-
-} else {
-$managementVMOSSku = '2022-datacenter'
+} 
+else 
+{
+    $managementVMOSSku = '2022-datacenter'
+    Write-Host "Your chosen management VM OS Sku is '$managementVMOSSku'"
 }
 #endregion
 
 #region If AVD session host prompt set true, query and display available Skus
 if ($PromptForSessionHostOSSku){
-Write-Host "`n    Gathering list of available Windows session host SKUs..." -ForegroundColor Cyan
-$AVDSHvmsku = Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -offer 'windows-10' | Where-Object ({$_.Skus -like "*evd*" -and $_.Skus -notlike "*rs5*" -or $_.Skus -like "*avd*"})| Select-Object -ExpandProperty Skus
-$AVDSHvmsku += Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -offer 'office-365' | Where-Object ({$_.Skus -like "*evd*" -and $_.Skus -notlike "*rs5*" -or $_.Skus -like "*avd*"})| Select-Object -ExpandProperty Skus
-$AVDSHvmsku += Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -offer 'windows-11' | Where-Object ({$_.Skus -like "*evd*" -and $_.Skus -notlike "*rs5*" -or $_.Skus -like "*avd*"})| Select-Object -ExpandProperty Skus
+    Write-Host "`n    Gathering list of available Windows session host SKUs..." -ForegroundColor Cyan
+    $AVDSHvmsku = @('windows-10', 'office-365', 'windows-11') | ForEach-Object { Get-AzVMImageSku -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -offer $_ | Where-Object ( { $_.Skus -like "*evd*" -and $_.Skus -notlike "*rs5*" -or $_.Skus -like "*avd*" }) | Select-Object -ExpandProperty Skus }
+    $avdHostPool_vmGalleryImageSKU = Get-MenuSelection -MenuItems $AVDSHvmsku -LableText 'Please select AVD OS Sku:' -FormText 'AVD OS Sku'
 
-# Present a pop-up form to select management VM OS Sku to build from
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+    # Present a pop-up form to select management VM OS Sku to build from
 
-$form = New-Object System.Windows.Forms.Form
-$form.Text = 'AVD OS Sku'
-$form.Size = New-Object System.Drawing.Size(300,200)
-$form.StartPosition = 'CenterScreen'
+    if ($avdHostPool_vmGalleryImageSKU -eq 'CANCEL')
+    {
+        Write-Host "The 'Cancel' button was pressed. The script will now exit." -ForegroundColor Red
+        Return
+    }
+    else
+    {
+        # Set the correct 'ImageOffer' based on the image selected
+        If ($null -eq $avdHostPool_vmGalleryImageSKU)
+        {
+            $avdHostPool_vmGalleryImageSKU = '21h1-evd-o365pp'
+        }
+        switch -Wildcard ($avdHostPool_vmGalleryImageSKU)
+        {
+            *win11-* { $avdHostPool_vmGalleryImageOffer = 'windows-11' ; Break }
+            *-o365pp* { $avdHostPool_vmGalleryImageOffer = 'office-365'; Break }
+            Default { $avdHostPool_vmGalleryImageOffer = 'windows-10' }
+        }
 
-$okButton = New-Object System.Windows.Forms.Button
-$okButton.Location = New-Object System.Drawing.Point(75,120)
-$okButton.Size = New-Object System.Drawing.Size(75,23)
-$okButton.Text = 'OK'
-$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-$form.AcceptButton = $okButton
-$form.Controls.Add($okButton)
-
-$cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(150,120)
-$cancelButton.Size = New-Object System.Drawing.Size(75,23)
-$cancelButton.Text = 'Cancel'
-$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-$form.CancelButton = $cancelButton
-$form.Controls.Add($cancelButton)
-
-$label = New-Object System.Windows.Forms.Label
-$label.Location = New-Object System.Drawing.Point(10,20)
-$label.Size = New-Object System.Drawing.Size(280,20)
-$label.Text = 'Please select AVD OS Sku:'
-$form.Controls.Add($label)
-
-$listBox = New-Object System.Windows.Forms.ListBox
-$listBox.Location = New-Object System.Drawing.Point(10,40)
-$listBox.Size = New-Object System.Drawing.Size(260,20)
-$listBox.Height = 80
-
-ForEach ($A in $AVDSHvmsku){
-Write-Output $A | ForEach-Object {[void] $listBox.Items.Add($_)}
+        Write-Host "Your chosen Windows session host OS Sku is '$avdHostPool_vmGalleryImageSKU' - Image Offer is '$avdHostPool_vmGalleryImageOffer'"
+    }
 }
-
-$form.Controls.Add($listBox)
-
-$form.Topmost = $true
-
-$result = $form.ShowDialog()
-
-if ($result -eq [System.Windows.Forms.DialogResult]::CANCEL)
- {
-    Write-Host "The 'Cancel' button was pressed. The script will now exit." -ForegroundColor Red
-    Return
- }
-if ($null -eq $listBox.SelectedItem)
- {
-    Write-Host "    A Windows Server OS Sku was not selected.
-    Please re-run this script and select a Windows OS Sku in the pop-up pick-list" -ForegroundColor Red
-    Return
- }
-if ($result -eq [System.Windows.Forms.DialogResult]::OK)
- {
-    $avdHostPool_vmGalleryImageSKU = $listBox.SelectedItem
-    # Set the correct 'ImageOffer' based on the image selected
-if (Get-AzVMImage -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -Offer 'windows-10' -Sku $avdHostPool_vmGalleryImageSKU -ErrorAction SilentlyContinue) {
-    $avdHostPool_vmGalleryImageOffer = 'windows-10'
-    } elseif (Get-AzVMImage -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -Offer 'windows-11' -Sku $avdHostPool_vmGalleryImageSKU -ErrorAction SilentlyContinue) {
-    $avdHostPool_vmGalleryImageOffer = 'windows-11'
-    } elseif (Get-AzVMImage -Location $ChosenAzureLocation -PublisherName 'MicrosoftWindowsDesktop' -Offer 'office-365' -Sku $avdHostPool_vmGalleryImageSKU -ErrorAction SilentlyContinue) {
-    $avdHostPool_vmGalleryImageOffer = 'office-365'
-}
-
-    Write-Host "Your chosen Windows session host OS Sku is '$avdHostPool_vmGalleryImageSKU'"
- }
-
-} else {
-$avdHostPool_vmGalleryImageSKU = '21h1-evd-o365pp'
+else 
+{
+    $avdHostPool_vmGalleryImageSKU = '21h1-evd-o365pp'
 }
 #endregion
 
@@ -570,15 +446,19 @@ Write-Host "`nCreating user-assigned managed identity account, which will be the
 #region Grant the 'Owner' subscription level role to the managed identity
 Write-Host "Now checking if user assigned identity '$UserAssignedIdentityName' has 'Owner' subscription level role assignment" -ForegroundColor Cyan
 $UAMIOwnerSubRoleCheck = Get-AzUserAssignedIdentity -Name $UserAssignedIdentityName -ResourceGroupName $BlueprintGlobalResourceGroupName -ErrorAction SilentlyContinue
-if (-not($UAMIOwnerSubRoleCheck)){
-    Do {
-    Write-Host "Waiting 3 seconds for user assigned managed identity '$UserAssignedIdentityName' to become available for next operation..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 3
+if (-not($UAMIOwnerSubRoleCheck))
+{
+    Do
+    {
+        Write-Host "Waiting 3 seconds for user assigned managed identity '$UserAssignedIdentityName' to become available for next operation..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 3
     } until (Get-AzUserAssignedIdentity -Name $UserAssignedIdentityName -ResourceGroupName $BlueprintGlobalResourceGroupName -ErrorAction SilentlyContinue)
     
     New-AzRoleAssignment -ObjectId $UserAssignedIdentity.PrincipalId -RoleDefinitionName 'Owner' -Scope "/subscriptions/$AzureSubscriptionID"
 
-} else {
+}
+else
+{
     Write-Host "User assigned identity '$UserAssignedIdentityName' already has 'Owner' role assigned at the subscription level" -ForegroundColor Cyan
     $UAMIOwnerSubRoleCheck
 }
@@ -587,16 +467,20 @@ if (-not($UAMIOwnerSubRoleCheck)){
 #region Register the Azure Blueprint provider to the subscription, if not already registered
 Write-Host "Now checking the 'Microsoft.Blueprint' provider, and registering if needed" -ForegroundColor Cyan
 $BlueprintProviderRegistration = Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered")}
-if (-not($BlueprintProviderRegistration)) {
+if (-not($BlueprintProviderRegistration))
+{
     Write-Host "The 'Microsoft.Blueprint' provider is not currently registered. Now registering..." -ForegroundColor Cyan
     Register-AzResourceProvider -ProviderNamespace 'Microsoft.Blueprint'
     # adding a pause here until the 'Blueprint' provider is in the actual 'Registered' state
-    Do {
+    Do
+    {
         Write-Host "Pausing to ensure 'Blueprint' provider is in the 'registered' state. waiting 3 seconds..." -ForegroundColor Cyan
         Start-Sleep -Seconds 3
-        } until (Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered")} -ErrorAction SilentlyContinue)
-    Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered")}
-} else {
+    } until (Get-AzResourceProvider -ListAvailable | Where-Object { ($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered") } -ErrorAction SilentlyContinue)
+    Get-AzResourceProvider -ListAvailable | Where-Object { ($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered") }
+}
+else
+{
     Write-Host "The 'Microsoft.Blueprint' provider is already registered" -ForegroundColor Cyan
     $BlueprintProviderRegistration
 }
@@ -605,11 +489,14 @@ if (-not($BlueprintProviderRegistration)) {
 #region Register the Azure Blueprint provider to the subscription, if not already registered
 Write-Host "Now checking the 'Microsoft.Blueprint' provider, and registering if needed" -ForegroundColor Cyan
 $BlueprintProviderList = Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered")}
-if (-not($BlueprintProviderList)) {
+if (-not($BlueprintProviderList))
+{
     Write-Host "The 'Microsoft.Blueprint' provider is not currently registered. Now registering..." -ForegroundColor Cyan
     Register-AzResourceProvider -ProviderNamespace 'Microsoft.Blueprint'
-    Get-AzResourceProvider -ListAvailable | Where-Object {($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered")}
-} else {
+    Get-AzResourceProvider -ListAvailable | Where-Object { ($_.ProviderNamespace -EQ "Microsoft.Blueprint" -and $_.RegistrationState -EQ "Registered") }
+}
+else
+{
     Write-Host "The 'Microsoft.Blueprint' provider is already registered" -ForegroundColor Cyan
     $BlueprintProviderList
 }
@@ -618,19 +505,24 @@ if (-not($BlueprintProviderList)) {
 #region Grant the 'Blueprint Operator' subscription level role to the managed identity
 Write-Host "Now checking if user assigned identity '$UserAssignedIdentityName' has 'Blueprint Operator' subscription level role assignment" -ForegroundColor Cyan
 $UAMIBlueprintOperatorRoleCheck = Get-AzUserAssignedIdentity -Name $UserAssignedIdentityName -ResourceGroupName $BlueprintGlobalResourceGroupName
-if (-not($UAMIBlueprintOperatorRoleCheck)) {
-    Do {
-    Write-Host "User assigned identity '$UserAssignedIdentityName' is not currently available, waiting 3 seconds..." -ForegroundColor Cyan
-    Start-Sleep -Seconds 3
+if (-not($UAMIBlueprintOperatorRoleCheck))
+{
+    Do
+    {
+        Write-Host "User assigned identity '$UserAssignedIdentityName' is not currently available, waiting 3 seconds..." -ForegroundColor Cyan
+        Start-Sleep -Seconds 3
     } until (Get-AzUserAssignedIdentity -Name $UserAssignedIdentityName -ResourceGroupName $BlueprintGlobalResourceGroupName -ErrorAction SilentlyContinue)
     Write-Host "User Assigned Managed Identity '$UserAssignedIdentityName' is now available..." -ForegroundColor Cyan
 }   
 $UAMIBlueprintOperatorRoleCheck2 = Get-AzRoleAssignment -ResourceGroupName $BlueprintGlobalResourceGroupName -ObjectID ($UserAssignedIdentity).PrincipalId -RoleDefinitionName 'Blueprint Operator'
-if (-not($UAMIBlueprintOperatorRoleCheck2)){
+if (-not($UAMIBlueprintOperatorRoleCheck2))
+{
     Write-Host "Now checking if 'Blueprint Operator' role is currently assigned to '$UserAssignedIdentityName'" -ForegroundColor Cyan
     Get-AzRoleAssignment -ResourceGroupName $BlueprintGlobalResourceGroupName -ObjectID ($UserAssignedIdentity).PrincipalId -RoleDefinitionName 'Blueprint Operator'
     New-AzRoleAssignment -ObjectId ($UserAssignedIdentity).PrincipalId -RoleDefinitionName 'Blueprint Operator' -Scope "/subscriptions/$AzureSubscriptionID"
-} else {    
+}
+else
+{    
     Write-Host "User assigned identity '$UserAssignedIdentityName' already has 'Blueprint Operator' role assigned at the subscription level" -ForegroundColor Cyan
     Get-AzRoleAssignment -ResourceGroupName $BlueprintGlobalResourceGroupName -ObjectID ($UserAssignedIdentity).PrincipalId -RoleDefinitionName 'Blueprint Operator' -ErrorAction SilentlyContinue
 }
