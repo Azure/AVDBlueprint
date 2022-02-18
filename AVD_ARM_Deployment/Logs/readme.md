@@ -1,0 +1,1 @@
+'Logs' folder exists only for logging during a deployment'
