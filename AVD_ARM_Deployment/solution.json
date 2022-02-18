@@ -1,0 +1,2037 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "_guidValue": {
+      "type": "string",
+      "defaultValue": "[newGuid()]"
+    },
+    "adds_sku": {
+      "type": "string",
+      "metadata": {
+        "description": "description"
+      },
+      "defaultValue": "Enterprise"
+    },
+    "adminPassword": {
+      "type": "securestring"
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "domainadmin"
+    },
+    "avdHostPool_allApplicationGroupReferences": {
+      "type": "string",
+      "metadata": {
+        "description": "The existing app groups references of the workspace selected."
+      },
+      "defaultValue": ""
+    },
+    "avdHostPool_customRdpProperty": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": ""
+    },
+    "avdHostPool_loadBalancerType": {
+      "type": "string",
+      "metadata": {
+        "description": "The method of balancing user session load on session hosts, in the host pool (wide vs. deep)"
+      },
+      "AllowedValues": [
+        "DepthFirst",
+        "BreadthFirst",
+        "Persistent"
+      ],
+      "defaultValue": "BreadthFirst"
+    },
+    "avdHostPool_maxSessionLimit": {
+      "type": "int",
+      "metadata": {
+        "description": "The maximum number of user sessions per session host in the host pool"
+      },
+      "defaultValue": 16
+    },
+    "avdHostPool_ouPath": {
+      "type": "string",
+      "metadata": {
+        "description": "OUPath for the domain join"
+      },
+      "defaultValue": ""
+    },
+    "avdHostPool_personalDesktopAssignmentType": {
+      "type": "string",
+      "allowedValues": [
+        "Automatic",
+        "Direct",
+        ""
+      ],
+      "metadata": {
+        "description": "Set the type of assignment for a Personal hostpool type"
+      },
+      "defaultValue": ""
+    },
+    "avdHostPool_preferredAppGroupType": {
+      "type": "string",
+      "metadata": {
+        "description": "Preferred App Group type to display"
+      },
+      "defaultValue": "Desktop"
+    },
+    "avdHostPool_type": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "allowedValues": [
+        "Personal",
+        "Pooled"
+      ],
+      "defaultValue": "Pooled"
+    },
+    "avdHostPool_userCount": {
+      "type": "int",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": 5
+    },
+    "avdHostPool_userPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "avdHostPool_validationEnvironment": {
+      "type": "bool",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": false
+    },
+    "avdHostPool_vmGalleryImageOffer": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": "office-365"
+    },
+    "avdHostPool_vmGalleryImagePublisher": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": "MicrosoftWindowsDesktop"
+    },
+    "avdHostPool_vmGalleryImageSKU": {
+      "type": "string",
+      "metadata": {
+        "description": "20h1=2004, 20h2=2009, 21h1=21h1, 21h2=21h2"
+      },
+      "defaultValue": "win10-21h2-avd-m365"
+     },
+    "avdHostPool_vmImageType": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": "Gallery"
+    },
+    "avdHostPool_vmDiskType": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": "StandardSSD_LRS"
+    },
+    "avdHostPool_vmNumberOfInstances": {
+      "type": "int",
+      "metadata": {
+        "description": "Total Number of AVD virtual machines to create."
+      },
+      "defaultValue": 2
+    },
+    "avdHostPool_vmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "The size of the Azure VM used when session hosts are created."
+      },
+      "defaultValue": "Standard_D8s_v4"
+    },
+    "avdHostPool_vmUseManagedDisks": {
+      "type": "bool",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": true
+    },
+    "baseTime": {
+      "type": "string",
+      "defaultValue": "[utcNow('u')]"
+    },
+    "domainName": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "usePublicIP": {
+      "type": "bool",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": false
+    },
+    "vmImageType": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": "Gallery"
+    },
+    "createAvailabilitySet": {
+      "type": "bool",
+      "metadata": {
+        "description": "true/false to create an availability set for the session host VMs"
+      },
+      "defaultValue": true
+    },
+    "createNetworkSecurityGroup": {
+      "type": "bool",
+      "metadata": {
+        "description": ""
+      },
+      "defaultValue": false
+    },
+    "log-analytics_service-tier": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics Service tier: Free, Standalone, PerNode or PerGB2018."
+      },
+      "defaultValue": "PerNode",
+      "allowedValues": [ "Free", "Standalone", "PerNode", "PerGB2018" ]
+    },
+    "logsRetention": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of days data will be retained."
+      },
+      "defaultValue": 365
+    },
+    "managedIdentity": {
+      "type": "string",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "networkSecurityGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource id of an existing network security group"
+      },
+      "defaultValue": ""
+    },
+    "managementVMOSSku": {
+      "type": "string"
+    },
+    "publicIpAddressSku": {
+      "type": "string",
+      "metadata": {
+        "description": "The sku name of the Public IP"
+      },
+      "allowedValues": [
+        "Basic",
+        "Standard"
+      ],
+      "defaultValue": "Basic"
+    },
+    "publicIpAddressType": {
+      "type": "string",
+      "metadata": {
+        "description": "The address type of the Public IP"
+      },
+      "allowedValues": [
+        "Dynamic",
+        "Static"
+      ],
+      "defaultValue": "Dynamic"
+    },
+    "resourcePrefix": {
+      "type": "string",
+      "metadata": {
+      },
+      "defaultValue": "AVD"
+    },
+    "utcValue": {
+      "type": "string",
+      "defaultValue": "[utcNow()]"
+    },
+    "vnetEnableDdosProtection ": {
+      "type": "bool",
+      "metadata": {
+        "description": "Determines whether or not DDoS Protection is enabled in the Virtual Network."
+      },
+      "defaultValue": false
+    }
+  },
+  "variables": {
+    "adminUserPrincipalName": "[concat(parameters('adminUsername'), '@', parameters('domainName'))]",
+    "application-security-groups": [
+      {
+        "name": "dc"
+      }
+    ],
+    "appGroupName": "[concat(variables('resourcePrefix'),'-avd-dag')]",
+    "appGroupResourceId": "[createArray(resourceId('Microsoft.DesktopVirtualization/applicationgroups/', variables('appGroupName')))]",
+    "applicationGroupReferencesArr": "[if(equals('',parameters('avdHostPool_allApplicationGroupReferences')), variables('appGroupResourceId'), concat(split(parameters('avdHostPool_allApplicationGroupReferences'),','), variables('appGroupResourceId')))]",
+    "artifactsLocation": "https://wvdportalstorageblob.blob.core.windows.net/galleryartifacts/Configuration_7-20-2020.zip",
+    "availabilitySetName": "[concat(variables('resourcePrefix'), '-avd-as')]",
+    "avSetSKU": "[if(variables('rdshManagedDisks'), 'Aligned', 'Classic')]",
+    "ddos-protection-plan-name": "[concat(variables('deployment-prefix'), '-ddos-plan')]",
+    "ddos-protection-plan-id": {
+      "id": "[resourceId('Microsoft.Network/ddosProtectionPlans', variables('ddos-protection-plan-name'))]"
+    },
+    "deployment-prefix": "[concat(variables('resourcePrefix'), '-sharedsvcs')]",
+    "diagnostic-storageAccount-prefix": "[concat(replace(variables('deployment-prefix'), '-', ''), 'diag')]",
+    "diagnostic-storageAccount-name": "[toLower(substring(replace(concat(variables('diagnostic-storageAccount-prefix'), variables('uniqueString'), variables('uniqueString')), '-', ''), 0, 23) )]",
+    "empty-array": [],
+    "enable-ddos-protection": "[bool(parameters('vnetEnableDdosProtection '))]",
+    "hostPoolName": "[concat(variables('resourcePrefix'), '-avd-hp')]",
+    "location": "[resourceGroup().location]",
+    "log-analytics-search-version": 1,
+    "network-security-groups": [
+      {
+        "name": "sharedsvcs-subnet",
+        "rules": [
+          {
+            "name": "allow-tcp-between-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-udp-between-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "direction": "Inbound",
+              "priority": 110,
+              "protocol": "Udp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-tcp-ad",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 120,
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-udp-ad",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 130,
+              "protocol": "Udp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-rdp-into-dc",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "3389",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 140,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-tcp-vnet-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "destinationPortRange": "",
+              "direction": "Inbound",
+              "priority": 160,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "allow-udp-vnet-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "destinationPortRange": "",
+              "direction": "Inbound",
+              "priority": 170,
+              "protocol": "UDP",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "deny-vnet",
+            "properties": {
+              "access": "Deny",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefixes": [],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 4096,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "allow-vnet",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefix": "*",
+              "destinationAddressPrefixes": [],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Outbound",
+              "priority": 100,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "app-subnet",
+        "rules": [
+          {
+            "name": "allow-tcp-between-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 100,
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-udp-between-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "direction": "Inbound",
+              "priority": 110,
+              "protocol": "Udp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-tcp-ad",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 120,
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-udp-ad",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "direction": "Inbound",
+              "priority": 130,
+              "protocol": "Udp",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-rdp-into-dc",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRange": "3389",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 140,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ]
+            }
+          },
+          {
+            "name": "allow-tcp-vnet-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRanges": [
+                "389",
+                "42",
+                "88",
+                "636",
+                "3268",
+                "3269",
+                "445",
+                "25",
+                "135",
+                "5722",
+                "464",
+                "9389",
+                "139",
+                "53",
+                "49152-65535"
+              ],
+              "destinationPortRange": "",
+              "direction": "Inbound",
+              "priority": 160,
+              "protocol": "TCP",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "allow-udp-vnet-adds",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "destinationAddressPrefix": "",
+              "destinationPortRanges": [
+                "389",
+                "88",
+                "445",
+                "123",
+                "464",
+                "138",
+                "137",
+                "53",
+                "49152-65535"
+              ],
+              "destinationPortRange": "",
+              "direction": "Inbound",
+              "priority": 170,
+              "protocol": "UDP",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [
+                {
+                  "name": "dc"
+                }
+              ],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "deny-vnet",
+            "properties": {
+              "access": "Deny",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationAddressPrefixes": [],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Inbound",
+              "priority": 4096,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "allow-vnet",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefix": "*",
+              "destinationAddressPrefixes": [],
+              "destinationPortRange": "*",
+              "destinationPortRanges": [],
+              "direction": "Outbound",
+              "priority": 100,
+              "protocol": "*",
+              "sourceAddressPrefix": "VirtualNetwork",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "adds-subnet",
+        "rules": [
+          {
+            "name": "AllowSyncWithAzureAD",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "priority": 101,
+              "direction": "Inbound",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "AzureActiveDirectoryDomainServices",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "443",
+              "destinationPortRanges": [],
+              "sourcePortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "AllowPSRemoting",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "priority": 301,
+              "direction": "Inbound",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "AzureActiveDirectoryDomainServices",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "5986",
+              "destinationPortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          },
+          {
+            "name": "AllowRD",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefixes": [],
+              "priority": 201,
+              "direction": "Inbound",
+              "protocol": "Tcp",
+              "sourceAddressPrefix": "CorpNetSaw",
+              "sourcePortRange": "*",
+              "sourcePortRanges": [],
+              "destinationAddressPrefix": "*",
+              "destinationPortRange": "3389",
+              "destinationPortRanges": [],
+              "destinationApplicationSecurityGroups": [],
+              "sourceApplicationSecurityGroups": []
+            }
+          }
+        ]
+      }
+    ],
+    "newNsgName": "[concat(variables('vmName_AVD'), 'nsg-', parameters('_guidValue'))]",
+    "nicName_MGMT": "[concat(variables('resourcePrefix'), '-mgmtvm-nic')]",
+    "nsgId": "[if(parameters('createNetworkSecurityGroup'), resourceId('Microsoft.Network/networkSecurityGroups', variables('newNsgName')), parameters('networkSecurityGroupId'))]",
+    "oms-workspace-name": "[concat(variables('deployment-prefix'), '-log')]",
+    "publicIPName_MGMT": "[concat(variables('resourcePrefix'), '-mgmtvm-pip')]",
+    "rdshManagedDisks": "[if(equals(parameters('vmImageType'), 'CustomVHD'), parameters('avdHostPool_vmUseManagedDisks'), bool('true'))]",
+    "resourceGroupName": "[resourceGroup().name]",
+    "resourcePrefix": "[toLower(parameters('resourcePrefix'))]",
+    "roleAssignmentName_Admin": "[guid(variables('StorageAccountName'), 'Admin')]",
+    "roleAssignmentName_Users": "[guid(variables('StorageAccountName'), 'Users')]",
+    "solutions": [
+      {
+        "name": "[concat('Updates', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "Updates"
+      },
+      {
+        "name": "[concat('AzureAutomation', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "AzureAutomation"
+      },
+      {
+        "name": "[concat('AntiMalware', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "AntiMalware"
+      },
+      {
+        "name": "[concat('Security', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "Security"
+      },
+      {
+        "name": "[concat('ChangeTracking', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "ChangeTracking"
+      },
+      {
+        "name": "[concat('KeyVaultAnalytics', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "KeyVaultAnalytics"
+      },
+      {
+        "name": "[concat('ServiceMap', '(', variables('oms-workspace-name'), ')')]",
+        "galleryName": "ServiceMap"
+      }
+    ],
+    "storageAccountName": "[toLower(substring(concat(variables('resourcePrefix'),uniqueString(subscription().id)), 0, 14))]",
+    "storageAccountSuffix": "[environment().suffixes.storage]",
+    "storageAccountType": "[parameters('avdHostPool_vmDiskType')]",
+    "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]",
+    "subnetName": "[variables('subnets')[0].name]",
+    "subnets": [
+      {
+        "name": "sharedsvcs",
+        "address-prefix": "10.0.0.0/24",
+        "network-security-group": "",
+        "user-defined-route": "",
+        "service-endpoints": []
+      },
+      {
+        "name": "AzureADDSSubnet",
+        "address-prefix": "10.0.6.0/24",
+        "network-security-group": "adds-subnet",
+        "user-defined-route": "",
+        "service-endpoints": []
+      }
+    ],
+    "uniqueString": "[uniqueString(subscription().id, concat(variables('deployment-prefix'), '-log'))]",
+    "vmInitialNumber": 0,
+    "vmName_AVD": "[concat(variables('resourcePrefix'), 'vm')]",
+    "vmName_MGMT": "[concat(toLower(variables('resourcePrefix')), '-mgmtvm')]",
+    "vmTemplate": "[concat('{\"domain\":\"', parameters('domainName'), '\",\"galleryImageOffer\":\"', parameters('avdHostPool_vmGalleryImageOffer'), '\",\"galleryImagePublisher\":\"', parameters('avdHostPool_vmGalleryImagePublisher'), '\",\"galleryImageSKU\":\"', parameters('avdHostPool_vmGalleryImageSKU'), '\",\"imageType\":\"', parameters('avdHostPool_vmImageType'), '\",\"imageUri\":null,\"customImageId\":null,\"namePrefix\":\"', variables('vmName_AVD'), '\",\"osDiskType\":\"', parameters('avdHostPool_vmDiskType'), '\",\"useManagedDisks\":', parameters('avdHostPool_vmUseManagedDisks'), ',\"avdHostPool_vmSize\":{\"id\":\"Standard_D2s_v3\",\"cores\":2,\"ram\":8},\"galleryItemId\":\"', parameters('avdHostPool_vmGalleryImagePublisher'), '.',parameters('avdHostPool_vmGalleryImageSKU'),'\"}')]",
+    "vnetName": "[concat(variables('resourcePrefix'), '-sharedsvcs-vnet')]",
+    "workspaceName": "[concat(variables('resourcePrefix'), '-avd-ws')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('storageAccountName')]",
+      "apiVersion": "2021-04-01",
+      "location": "[variables('location')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": true,
+        "allowSharedKeyAccess": true,
+        "largeFileSharesState": "Enabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+        {
+      "type": "Microsoft.Storage/storageAccounts/fileServices",
+      "name": "[concat(variables('StorageAccountName'), '/default')]",
+      "apiVersion": "2021-02-01",
+      "dependsOn": [
+        "[variables('StorageAccountName')]"
+      ],
+      "properties": {
+        "shareDeleteRetentionPolicy": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "name": "[concat(variables('StorageAccountName'), '/default/profiles')]",
+      "apiVersion": "2021-02-01",
+      "dependsOn": [
+        "[variables('StorageAccountName')]",
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('StorageAccountName'), 'default')]"
+      ],
+      "properties": {
+        "accessTier": "TransactionOptimized",
+        "shareQuota": 100,
+        "enabledProtocols": "SMB"
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "name": "[variables('oms-workspace-name')]",
+      "apiVersion": "2021-06-01",
+      "location": "[variables('location')]",
+      "properties": {
+        "features": {
+          "searchVersion": "[variables('log-analytics-search-version')]"
+        },
+        "sku": {
+          "name": "[parameters('log-analytics_service-tier')]"
+        },
+        "retentionInDays": "[parameters('logsRetention')]"
+      },
+      "resources": [
+        {
+          "type": "savedSearches",
+          "name": "AzureFirewallThreatDeny",
+          "apiVersion": "2020-08-01",
+          "dependsOn": [
+            "[variables('oms-workspace-name')]"
+          ],
+          "properties": {
+            "etag": "*",
+            "DisplayName": "Azure Threat Deny",
+            "Category": "VDC Saved Searches",
+            "Query": "AzureDiagnostics | where ResourceType == 'AZUREFIREWALLS' and msg_s contains 'Deny'"
+          }
+        },
+        {
+          "type": "datasources",
+          "name": "[subscription().subscriptionId]",
+          "apiVersion": "2020-08-01",
+          "kind": "AzureActivityLog",
+          "location": "[variables('location')]",
+          "dependsOn": [
+            "[variables('oms-workspace-name')]"
+          ],
+          "properties": {
+            "linkedResourceId": "[concat(subscription().Id, '/providers/microsoft.insights/eventTypes/management')]"
+          }
+        },
+        {
+          "type": "datasources",
+          "name": "applicationEvent",
+          "apiVersion": "2020-08-01",
+          "dependsOn": [
+            "[variables('oms-workspace-name')]"
+          ],
+          "kind": "WindowsEvent",
+          "properties": {
+            "eventLogName": "Application",
+            "eventTypes": [
+              {
+                "eventType": "Error"
+              },
+              {
+                "eventType": "Warning"
+              },
+              {
+                "eventType": "Information"
+              }
+            ]
+          }
+        },
+        {
+          "type": "datasources",
+          "name": "systemEvent",
+          "apiVersion": "2020-08-01",
+          "dependsOn": [
+            "[variables('oms-workspace-name')]"
+          ],
+          "kind": "WindowsEvent",
+          "properties": {
+            "eventLogName": "System",
+            "eventTypes": [
+              {
+                "eventType": "Error"
+              },
+              {
+                "eventType": "Warning"
+              },
+              {
+                "eventType": "Information"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.OperationsManagement/solutions",
+      "name": "[concat(variables('solutions')[copyIndex()].name)]",
+      "apiVersion": "2015-11-01-preview",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('oms-workspace-name')]"
+      ],
+      "copy": {
+        "name": "solutionCopy",
+        "count": "[length(variables('solutions'))]",
+        "mode": "Serial"
+      },
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('oms-workspace-name'))]"
+      },
+      "plan": {
+        "name": "[variables('solutions')[copyIndex()].name]",
+        "product": "[concat('OMSGallery/', variables('solutions')[copyIndex()].galleryName)]",
+        "promotionCode": "",
+        "publisher": "Microsoft"
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/providers/locks",
+      "name": "[concat(variables('oms-workspace-name'), '/Microsoft.Authorization/logAnalyticsDoNotDelete')]",
+      "apiVersion": "2017-04-01",
+      "dependsOn": [
+        "[variables('oms-workspace-name')]"
+      ],
+      "comments": "Resource lock on Log Analytics",
+      "properties": {
+        "level": "CannotDelete"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[variables('diagnostic-storageAccount-name')]",
+      "apiVersion": "2021-06-01",
+      "location": "[variables('location')]",
+      "kind": "StorageV2",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "tags": {
+        "layer": "management"
+      },
+      "properties": {
+        "encryption": {
+          "keySource": "Microsoft.Storage",
+          "services": {
+            "blob": {
+              "enabled": true
+            },
+            "file": {
+              "enabled": true
+            }
+          }
+        },
+        "supportsHttpsTrafficOnly": true,
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Deny"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/providers/locks",
+      "name": "[concat(variables('diagnostic-storageAccount-name'), '/Microsoft.Authorization/storageDoNotDelete')]",
+      "apiVersion": "2016-09-01",
+      "dependsOn": [
+        "[variables('diagnostic-storageAccount-name')]"
+      ],
+      "comments": "Resource lock on diagnostic storage account",
+      "properties": {
+        "level": "CannotDelete"
+      }
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces/storageinsightconfigs",
+      "name": "[concat(variables('oms-workspace-name'), '/', variables('diagnostic-storageAccount-name'))]",
+      "apiVersion": "2020-08-01",
+      "dependsOn": [
+        "[variables('oms-workspace-name')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]"
+      ],
+      "properties": {
+        "containers": [],
+        "tables": [
+          "WADWindowsEventLogsTable",
+          "WADETWEventTable",
+          "WADServiceFabric*EventTable"
+        ],
+        "storageAccount": {
+          "id": "[resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]",
+          "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name')), '2021-06-01').keys[0].value]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/applicationSecurityGroups",
+      "name": "[concat(variables('deployment-prefix'), '-', variables('application-security-groups')[copyIndex()].name, '-asg')]",
+      "apiVersion": "2017-10-01",
+      "location": "[variables('location')]",
+      "copy": {
+        "count": "[length(variables('application-security-groups'))]",
+        "name": "asgLoop"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[concat(variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].name, '-nsg')]",
+      "apiVersion": "2017-09-01",
+      "location": "[variables('location')]",
+      "copy": {
+        "count": "[length(variables('network-security-groups'))]",
+        "name": "nsgLoop"
+      },
+      "dependsOn": [
+        "asgLoop"
+      ],
+      "properties": {
+        "copy": [
+          {
+            "name": "securityRules",
+            "count": "[length(variables('network-security-groups')[copyIndex('nsgLoop')].rules)]",
+            "input": {
+              "name": "[variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].name]",
+              "properties": {
+                "access": "[variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.access]",
+                "destinationAddressPrefix": "[if(equals(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationAddressPrefix, ''), json('null'), variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationAddressPrefix)]",
+                "destinationAddressPrefixes": "[if(equals(length(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationAddressPrefixes), 0), json('null'), variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationAddressPrefixes)]",
+                "destinationApplicationSecurityGroups": "[if(equals(length(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationApplicationSecurityGroups), 0), json('null'), concat(variables('empty-array'), array(json(concat('{\"id\": \"', resourceId('Microsoft.Network/applicationSecurityGroups', concat(variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].rules[copyIndex('securityRules')].properties.destinationApplicationSecurityGroups[0].name, '-asg')), '\"', ',', '\"location\": \"', variables('location'), '\"}')))))]",
+                "destinationPortRanges": "[if(equals(length(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationPortRanges), 0), json('null'), variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationPortRanges)]",
+                "destinationPortRange": "[if(equals(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationPortRange, ''), json('null'), variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.destinationPortRange)]",
+                "direction": "[variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.direction]",
+                "priority": "[int(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.priority)]",
+                "protocol": "[variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.protocol]",
+                "sourceAddressPrefix": "[if(equals(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.sourceAddressPrefix, ''), json('null'), variables('network-security-groups')[copyIndex()].rules[copyIndex('securityRules')].properties.sourceAddressPrefix)]",
+                "sourceApplicationSecurityGroups": "[if(equals(length(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.sourceApplicationSecurityGroups), 0), json('null'), concat(variables('empty-array'), array(json(concat('{\"id\": \"', resourceId('Microsoft.Network/applicationSecurityGroups', concat(variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].rules[copyIndex('securityRules')].properties.sourceApplicationSecurityGroups[0].name, '-asg')), '\"', ',', '\"location\": \"', variables('location'), '\"}')))))]",
+                "sourcePortRanges": "[if(equals(length(variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.sourcePortRanges), 0), json('null'), variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.sourcePortRanges)]",
+                "sourcePortRange": "[variables('network-security-groups')[copyIndex('nsgLoop')].rules[copyIndex('securityRules')].properties.sourcePortRange]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Insights/diagnosticsettings",
+      "scope": "[concat('Microsoft.Network/networkSecurityGroups/', variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].name, '-nsg')]",
+      "name": "[concat('diag-', variables('deployment-prefix'), '-', variables('network-security-groups')[copyIndex()].name, '-nsg')]",
+      "apiVersion": "2017-05-01-preview",
+      "location": "[variables('location')]",
+      "copy": {
+        "count": "[length(variables('network-security-groups'))]",
+        "name": "nsgDiagnosticLoop"
+      },
+      "dependsOn": [
+        "nsgLoop",
+        "[variables('diagnostic-storageAccount-name')]"
+
+      ],
+      "properties": {
+        "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]",
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('oms-workspace-name'))]",
+        "logs": [
+          {
+            "category": "NetworkSecurityGroupEvent",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('logsRetention')]"
+            }
+          },
+          {
+            "category": "NetworkSecurityGroupRuleCounter",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('logsRetention')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/ddosProtectionPlans",
+      "name": "[variables('ddos-protection-plan-name')]",
+      "apiVersion": "2018-02-01",
+      "condition": "[equals(variables('enable-ddos-protection'), bool('true'))]",
+      "location": "[variables('location')]",
+      "tags": {
+        "displayName": "[variables('ddos-protection-plan-name')]"
+      },
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('vnetName')]",
+      "apiVersion": "2018-08-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "asgLoop",
+        "nsgLoop",
+        "[variables('ddos-protection-plan-name')]"
+      ],
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "enableDdosProtection": "[variables('enable-ddos-protection')]",
+        "ddosProtectionPlan": "[if(equals(variables('enable-ddos-protection'), bool('false')), json('null'), variables('ddos-protection-plan-id'))]",
+        "copy": [
+          {
+            "name": "subnets",
+            "count": "[length(variables('subnets'))]",
+            "input": {
+              "name": "[variables('subnets')[copyIndex('subnets')].name]",
+              "properties": {
+                "addressPrefix": "[variables('subnets')[copyIndex('subnets')]['address-prefix']]",
+                "networkSecurityGroup": "[if(equals(variables('subnets')[copyIndex('subnets')]['network-security-group'], ''), json('null'), json(concat('{\"id\": \"', resourceId('Microsoft.Network/networkSecurityGroups', concat(variables('deployment-prefix'), '-', variables('subnets')[copyIndex('subnets')]['network-security-group'], '-nsg')), '\"}')))]",
+                "routeTable": "[if(equals(variables('subnets')[copyIndex('subnets')]['user-defined-route'], ''), json('null'), json(concat('{\"id\": \"', resourceId('Microsoft.Network/routeTables', concat(variables('deployment-prefix'), '-', variables('subnets')[copyIndex('subnets')]['user-defined-route'], '-udr')), '\"}')))]",
+                "serviceEndpoints": "[if(equals(length(variables('subnets')[copyIndex('subnets')]['service-endpoints']), 0), json('null'), variables('subnets')[copyIndex('subnets')]['service-endpoints'])]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/providers/diagnosticSettings",
+      "name": "[concat(variables('vnetName'),'/Microsoft.Insights/service')]",
+      "apiVersion": "2017-05-01-preview",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('vnetName')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]"
+      ],
+      "properties": {
+        "storageAccountId": "[resourceId('Microsoft.Storage/storageAccounts', variables('diagnostic-storageAccount-name'))]",
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('oms-workspace-name'))]",
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "timeGrain": null,
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": "[parameters('logsRetention')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.AAD/DomainServices",
+      "name": "[parameters('domainName')]",
+      "apiVersion": "2020-01-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('vnetName')]"
+      ],
+      "properties": {
+        "domainName": "[parameters('domainName')]",
+        "filteredSync": "Disabled",
+        "domainConfigurationType": "FullySynced",
+        "notificationSettings": {
+          "notifyGlobalAdmins": "Enabled",
+          "notifyDcAdmins": "Enabled",
+          "additionalRecipients": []
+        },
+        "replicaSets": [
+          {
+            "subnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'),'AzureADDSSubnet')]",
+            "location": "[variables('location')]"
+          }
+        ],
+        "sku": "[parameters('adds_sku')]"
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "name": "dnsAndAccounts",
+      "apiVersion": "2020-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('vnetName')]",
+        "[parameters('domainName')]",
+        "[variables('storageAccountName')]"
+      ],
+      "kind": "AzurePowerShell",
+      "identity": {
+        "type": "userAssigned",
+        "userAssignedIdentities": {
+          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentity'))]": {}
+        }
+      },
+      "properties": {
+        "forceUpdateTag": "[parameters('utcValue')]",
+        "azPowerShellVersion": "5.4",
+        "arguments": "[concat('-AdminUsername ', parameters('adminUsername'), ' -DomainName ', parameters('domainName'), ' -ResourceGroupName ', variables('resourceGroupName'), ' -StorageAccountName ', variables('storageAccountName'), ' -SubnetName AzureADDSSubnet', ' -SubscriptionId ', subscription().id, ' -UserCount ', parameters('avdHostPool_userCount'), ' -UserPrefix ', variables('resourcePrefix'), ' -VnetName ', variables('vnetName'))]",
+        "scriptContent": "
+          param(
+            [string] [parameter(Mandatory=$true)] $AdminUsername,
+            [string] [parameter(Mandatory=$true)] $DomainName,
+            [string] [parameter(Mandatory=$true)] $ResourceGroupName, 
+            [string] [parameter(Mandatory=$true)] $StorageAccountName,
+            [string] [parameter(Mandatory=$true)] $SubnetName,
+            [string] [parameter(Mandatory=$true)] $SubscriptionId,
+            [int] [parameter(Mandatory=$true)] $UserCount,
+            [string] [parameter(Mandatory=$true)] $UserPrefix,
+            [string] [parameter(Mandatory=$true)] $VnetName
+          )
+
+          # Update DNS on the Azure Virtual Network
+          $vnet = Get-AzVirtualNetwork -Name $VnetName -ResourceGroupName $ResourceGroupName
+          $subnet = Get-AzVirtualNetworkSubnetConfig -Name $SubnetName -VirtualNetwork $vnet
+
+          if ($null -ne $subnet.IpConfigurations)
+          {
+            $dnsIPs = @()
+            foreach ($ipconfig in $subnet.IpConfigurations) {
+              $RG = $ipconfig.Id.Split('/')[4]
+              $NIC = $ipconfig.Id.Split('/')[8]
+              $IP = (Get-AzNetworkInterface -Name $NIC -ResourceGroupName $RG).IpConfigurations.PrivateIpAddress
+              $dnsIPs += $IP
+            }
+          }
+    
+          $obj = new-object -type PSObject -Property @{'DnsServers' = $dnsIPs}
+          $vnet.DhcpOptions = $obj
+          $vnet | Set-AzVirtualNetwork | Out-Null
+
+          $AdminGroupName = 'AAD DC Administrators'
+          $AdminPassword = ConvertTo-SecureString -String ${Env:AdminPassword} -AsPlainText -Force
+          $AdminUserPrincipalName = $AdminUserName + '@' + $DomainName
+          $UserGroupName = 'AVD Users'
+          $UserPassword = ConvertTo-SecureString -String ${Env:UserPassword} -AsPlainText -Force
+          $UserRoleName = 'Desktop Virtualization User'
+
+          # Create Azure ADDS Admin Account in Azure AD
+          if ($null -eq (Get-AzADUser -DisplayName $AdminUsername))
+          {
+            New-AzADUser `
+              -DisplayName $AdminUsername `
+              -UserPrincipalName $AdminUserPrincipalName `
+              -Password $AdminPassword `
+              -MailNickname $AdminUsername `
+              -ForceChangePasswordNextLogin:$false
+          }
+
+          # Create Security Group for Azure ADDS administration in Azure AD
+          if ($null -eq (Get-AzADGroup -DisplayName $AdminGroupName))
+          {
+            $AdminGroupPrincipal = New-AzADGroup `
+              -DisplayName $AdminGroupName `
+              -MailNickname $($AdminGroupName -replace '[\\W]','')
+          }
+
+          # Add Azure ADDS Admin Account to Security Group in Azure AD
+          Start-Sleep 10
+          if ($null -eq (Get-AzADGroupMember -GroupDisplayName $AdminGroupName | Where-Object {$_.UserPrincipalName -eq $AdminUserPrincipalName}))
+          {
+            Add-AzADGroupMember `
+              -TargetGroupDisplayName $AdminGroupName `
+              -MemberUserPrincipalName $AdminUserPrincipalName
+          }
+
+          # Create security group for AVD Application Group in Azure AD
+          if ($null -eq (Get-AzADGroup -DisplayName $UserGroupName))
+          {
+            $UserGroupPrincipal = New-AzADGroup `
+              -DisplayName $UserGroupName `
+              -MailNickname $($UserGroupName -replace '[\\W]','')
+          }
+         
+          # Create AVD test user accounts & add them to a security group in Azure AD
+          for ($i = 1 ; $i -le $UserCount ; $i++)
+          {
+            $DisplayName = $UserPrefix + $i
+            $MailNickName = ($DisplayName -replace '[\\W]','').ToLower()
+            $UserPrincipalName = $MailNickName + '@' + $DomainName
+                    
+            if ($null -eq (Get-AzADUser -UserPrincipalName $UserPrincipalName))
+            {
+              New-AzADUser `
+                -DisplayName  $DisplayName `
+                -UserPrincipalName $UserPrincipalName `
+                -Password $UserPassword `
+                -MailNickname $MailNickName `
+                -ForceChangePasswordNextLogin:$true
+            }
+
+            if ($null -eq (Get-AzADGroupMember -GroupDisplayName $UserGroupName | Where-Object {$_.DisplayName -eq $DisplayName}))
+            {
+              Add-AzADGroupMember `
+                -TargetGroupDisplayName $UserGroupName `
+                -MemberUserPrincipalName $UserPrincipalName
+            }
+          }
+
+          Set-AzStorageAccount `
+            -ResourceGroupName $ResourceGroupName `
+            -Name $StorageAccountName `
+            -EnableAzureActiveDirectoryDomainServicesForFile $true
+            
+
+          $DeploymentScriptOutputs = @{}
+          $DeploymentScriptOutputs['AdminGroupId'] = $AdminGroupPrincipal.Id
+          $DeploymentScriptOutputs['UserGroupId'] = $UserGroupPrincipal.Id
+        ",
+        "environmentVariables": [
+          {
+            "name": "AdminPassword",
+            "secureValue": "[parameters('adminPassword')]"
+          },
+          {
+            "name": "UserPassword",
+            "secureValue": "[parameters('avdHostPool_userPassword')]"
+          }
+        ],
+        "timeout": "PT4H",
+        "cleanupPreference": "OnSuccess",
+        "retentionInterval": "P1D"
+      }
+    },
+    {
+      "type": "Microsoft.DesktopVirtualization/hostpools",
+      "name": "[variables('hostPoolName')]",
+      "apiVersion": "2019-12-10-preview",
+      "location": "[variables('location')]",
+      "properties": {
+        "friendlyName": "",
+        "description": "",
+        "hostpoolType": "[parameters('avdHostPool_type')]",
+        "customRdpProperty": "[parameters('avdHostPool_customRdpProperty')]",
+        "personalDesktopAssignmentType": "[parameters('avdHostPool_personalDesktopAssignmentType')]",
+        "maxSessionLimit": "[parameters('avdHostPool_maxSessionLimit')]",
+        "loadBalancerType": "[parameters('avdHostPool_loadBalancerType')]",
+        "validationEnvironment": "[parameters('avdHostPool_validationEnvironment')]",
+        "preferredAppGroupType": "[parameters('avdHostPool_preferredAppGroupType')]",
+        "registrationInfo": {
+          "expirationTime": "[dateTimeAdd(parameters('baseTime'), 'PT3H')]",
+          "registrationTokenOperation": "Update"
+        },
+        "vmTemplate": "[variables('vmTemplate')]"
+      }
+    },
+    {
+      "type": "Microsoft.DesktopVirtualization/applicationgroups",
+      "name": "[variables('appGroupName')]",
+      "apiVersion": "2019-12-10-preview",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('hostPoolName')]"
+      ],
+      "properties": {
+        "hostpoolarmpath": "[resourceId('Microsoft.DesktopVirtualization/hostpools', variables('hostPoolName'))]",
+        "friendlyName": "Default Desktop",
+        "description": "Desktop Application Group created through the Hostpool Wizard",
+        "applicationGroupType": "Desktop"
+      },
+      "resources": [
+        {
+          "type": "Microsoft.DesktopVirtualization/applicationgroups/providers/roleAssignments",
+          "apiVersion": "2018-01-01-preview",
+          "name": "[concat(variables('appGroupName'), '/Microsoft.Authorization/', guid(variables('hostPoolName')))]",
+          "dependsOn": [
+            "[resourceId('Microsoft.DesktopVirtualization/applicationgroups', variables('appGroupName'))]",
+            "[resourceId('Microsoft.Resources/deploymentScripts', 'dnsAndAccounts')]"
+          ],
+          "properties": {
+            "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '1d18fff3-a72a-46b5-b4a9-0b38a3cd7e63')]",
+            "principalId": "[reference('dnsAndAccounts').outputs.UserGroupId]"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.DesktopVirtualization/workspaces",
+      "name": "[variables('workspaceName')]",
+      "apiVersion": "2019-12-10-preview",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('appGroupName')]"
+      ],
+      "properties": {
+        "applicationGroupReferences": "[variables('applicationGroupReferencesArr')]"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/availabilitySets",
+      "condition": "[parameters('createAvailabilitySet')]",
+      "name": "[variables('availabilitySetName')]",
+      "apiVersion": "2018-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('appGroupName')]"
+      ],
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 2
+      },
+      "sku": {
+        "name": "[variables('avSetSKU')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIpAddresses",
+      "condition": "[parameters('usePublicIP')]",
+      "name": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '-pip')]",
+      "apiVersion": "2019-02-01",
+      "location": "[variables('location')]",
+      "copy": {
+        "name": "rdsh-pip-loop",
+        "count": "[parameters('avdHostPool_vmNumberOfInstances')]"
+      },
+      "sku": {
+        "name": "[parameters('publicIpAddressSku')]"
+      },
+      "properties": {
+        "publicIpAllocationMethod": "[parameters('publicIpAddressType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "condition": "[parameters('createNetworkSecurityGroup')]",
+      "name": "[variables('newNsgName')]",
+      "apiVersion": "2019-02-01",
+      "location": "[variables('location')]",
+      "properties": {
+        "securityRules": []
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '-nic')]",
+      "apiVersion": "2018-11-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('newNsgName')]",
+        "rdsh-pip-loop",
+        "[variables('vnetName')]",
+        "dnsAndAccounts"
+      ],
+      "copy": {
+        "name": "rdsh-nic-loop",
+        "count": "[parameters('avdHostPool_vmNumberOfInstances')]"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              },
+              "publicIpAddress": "[if(parameters('usePublicIP'), json(concat('{\"id\": \"', resourceId('Microsoft.Network/publicIpAddresses', concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '-pip')), '\"}')), json('null'))]"
+            }
+          }
+        ],
+        "enableAcceleratedNetworking": false,
+        "networkSecurityGroup": "[if(empty(parameters('networkSecurityGroupId')), json('null'), json(concat('{\"id\": \"', variables('nsgId'), '\"}')))]"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')))]",
+      "apiVersion": "2018-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "rdsh-nic-loop",
+        "[variables('availabilitySetName')]"
+      ],
+      "copy": {
+        "name": "rdsh-vm-loop",
+        "count": "[parameters('avdHostPool_vmNumberOfInstances')]"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('avdHostPool_vmSize')]"
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('availabilitySetName'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')))]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('avdHostPool_vmGalleryImagePublisher')]",
+            "offer": "[parameters('avdHostPool_vmGalleryImageOffer')]",
+            "sku": "[parameters('avdHostPool_vmGalleryImageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[variables('storageAccountType')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '-nic'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": false
+          }
+        },
+        "licenseType": "Windows_Client"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '/JsonADDomainExtension')]",
+      "apiVersion": "2018-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[parameters('domainName')]",
+        "rdsh-vm-loop"
+      ],
+      "copy": {
+        "name": "rdsh-domain-join-loop",
+        "count": "[parameters('avdHostPool_vmNumberOfInstances')]"
+      },
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "name": "[parameters('domainName')]",
+          "ouPath": "[parameters('avdHostPool_ouPath')]",
+          "user": "[variables('adminUserPrincipalName')]",
+          "restart": "true",
+          "options": "3"
+        },
+        "protectedSettings": {
+          "password": "[parameters('adminPassword')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName_AVD'), add(copyindex(), variables('vmInitialNumber')), '/DSC')]",
+      "apiVersion": "2018-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "rdsh-vm-loop",
+        "rdsh-domain-join-loop",
+        "[variables('hostPoolName')]"
+      ],
+      "copy": {
+        "name": "rdsh-dsc-loop",
+        "count": "[parameters('avdHostPool_vmNumberOfInstances')]"
+      },
+      "properties": {
+        "publisher": "Microsoft.Powershell",
+        "type": "DSC",
+        "typeHandlerVersion": "2.73",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "modulesUrl": "[variables('artifactsLocation')]",
+          "configurationFunction": "Configuration.ps1\\AddSessionHost",
+          "properties": {
+            "hostPoolName": "[variables('hostPoolName')]",
+            "registrationInfoToken": "[reference(resourceId('Microsoft.DesktopVirtualization/hostpools', variables('HostPoolName')), '2019-12-10-preview').registrationInfo.token]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPName_MGMT')]",
+      "apiVersion": "2015-06-15",
+      "location": "[variables('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('vmName_MGMT')]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName_MGMT')]",
+      "apiVersion": "2015-06-15",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[variables('publicIPName_MGMT')]",
+        "[variables('vnetName')]",
+        "dnsAndAccounts"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPName_MGMT'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetId')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmName_MGMT')]",
+      "apiVersion": "2019-07-01",
+      "location": "[variables('Location')]",
+      "dependsOn": [
+        "[variables('nicName_MGMT')]"
+      ],
+      "identity": {
+        "type": "userAssigned",
+        "userAssignedIdentities": {
+          "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('managedIdentity'))]": {}
+        }
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_D2s_v5"
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName_MGMT')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "[parameters('managementVMOSSku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "name": "[concat(variables('vmName_MGMT'), '-OsDisk')]",
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            }
+          },
+          "dataDisks": [
+            {
+              "name": "[concat(variables('vmName_MGMT'),'-DataDisk')]",
+              "diskSizeGB": 1023,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName_MGMT'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": false
+          }
+
+        },
+        "licenseType": "Windows_Server"
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName_MGMT'),'/JsonADDomainExtension')]",
+      "apiVersion": "2018-10-01",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[parameters('domainName')]",
+        "[variables('vmName_MGMT')]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "JsonADDomainExtension",
+        "typeHandlerVersion": "1.3",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "name": "[parameters('domainName')]",
+          "ouPath": "[parameters('avdHostPool_ouPath')]",
+          "user": "[variables('adminUserPrincipalName')]",
+          "Restart": "true",
+          "Options": "3"
+        },
+        "protectedSettings": {
+          "password": "[parameters('adminPassword')]"
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "scope": "[concat('Microsoft.Storage/storageAccounts', '/', variables('storageAccountName'))]",
+      "name": "[variables('roleAssignmentName_Admin')]",
+      "apiVersion": "2020-04-01-preview",
+      "dependsOn": [
+        "[variables('StorageAccountName')]",
+        "dnsAndAccounts"
+      ],
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', 'a7264617-510b-434b-a828-9731dc254ea7')]",
+        "principalId": "[reference('dnsAndAccounts').outputs.AdminGroupId]"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "scope": "[concat('Microsoft.Storage/storageAccounts', '/', variables('storageAccountName'))]",
+      "name": "[variables('roleAssignmentName_Users')]",
+      "apiVersion": "2020-04-01-preview",
+      "dependsOn": [
+        "[variables('StorageAccountName')]",
+        "dnsAndAccounts",
+        "[variables('roleAssignmentName_Admin')]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '0c867c2a-1d8c-454a-a3db-ab2ea1bdc8bb')]",
+        "principalId": "[reference('dnsAndAccounts').outputs.UserGroupId]"
+      }
+    }
+  ],
+  "outputs": {
+    "SessionHostCount": {
+      "type": "int",
+      "value": "[parameters('avdHostPool_vmNumberOfInstances')]"
+    },
+    "SessionHostPrefix": {
+      "type": "string",
+      "value": "[variables('vmName_AVD')]"
+    },
+    "StorageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "StorageAccountSuffix": {
+      "type": "string",
+      "value": "[variables('storageAccountSuffix')]"
+    }
+  }
+}
