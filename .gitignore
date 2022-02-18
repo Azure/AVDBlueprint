@@ -2,3 +2,4 @@
 .vs/
 assignments/assign_*.json
 Deploy/
+AVD_ARM_Deployment/Logs/*.txt
